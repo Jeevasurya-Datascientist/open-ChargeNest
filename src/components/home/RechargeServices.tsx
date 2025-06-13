@@ -19,11 +19,7 @@ const RechargeServices = ({ onServiceClick }: RechargeServicesProps) => {
   ];
 
   const handleServiceClick = (serviceTitle: string) => {
-    if (serviceTitle === "Mobile") {
-      onServiceClick?.("Quick Recharge");
-    } else {
-      onServiceClick?.(serviceTitle);
-    }
+    onServiceClick?.(serviceTitle);
   };
 
   return (

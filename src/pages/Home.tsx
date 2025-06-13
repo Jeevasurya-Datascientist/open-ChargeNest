@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
@@ -8,6 +7,7 @@ import RechargeServices from "@/components/home/RechargeServices";
 import OffersSection from "@/components/home/OffersSection";
 import AddMoneyDialog from "@/components/wallet/AddMoneyDialog";
 import QuickRechargeDialog from "@/components/recharge/QuickRechargeDialog";
+import MobileRechargeDialog from "@/components/recharge/MobileRechargeDialog";
 import BillPaymentDialog from "@/components/bills/BillPaymentDialog";
 import ElectricityBillDialog from "@/components/bills/ElectricityBillDialog";
 
@@ -15,6 +15,7 @@ const Home = () => {
   const [walletBalance, setWalletBalance] = useState(2450);
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showQuickRecharge, setShowQuickRecharge] = useState(false);
+  const [showMobileRecharge, setShowMobileRecharge] = useState(false);
   const [showBillPayment, setShowBillPayment] = useState(false);
   const [showElectricityBill, setShowElectricityBill] = useState(false);
   const [billType, setBillType] = useState("");
@@ -47,6 +48,8 @@ const Home = () => {
   const handleServiceClick = (serviceType: string) => {
     if (serviceType === "Quick Recharge") {
       setShowQuickRecharge(true);
+    } else if (serviceType === "Mobile") {
+      setShowMobileRecharge(true);
     } else if (serviceType === "Electricity") {
       setShowElectricityBill(true);
     } else if (["DTH", "Gas", "Water", "Broadband"].includes(serviceType)) {
@@ -81,6 +84,12 @@ const Home = () => {
       <QuickRechargeDialog
         isOpen={showQuickRecharge}
         onClose={() => setShowQuickRecharge(false)}
+        onSuccess={handleRecharge}
+      />
+      
+      <MobileRechargeDialog
+        isOpen={showMobileRecharge}
+        onClose={() => setShowMobileRecharge(false)}
         onSuccess={handleRecharge}
       />
       
