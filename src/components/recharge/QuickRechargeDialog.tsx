@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Check } from "lucide-react";
 
 interface QuickRechargeDialogProps {
   isOpen: boolean;
@@ -19,33 +20,53 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
   const { toast } = useToast();
 
   const detectOperator = (number: string) => {
+    if (number.length < 10) return "";
+    
     const firstFour = number.substring(0, 4);
     
-    // Jio prefixes
-    if (['8907', '8908', '8909', '8910', '7023', '7024', '7025'].some(prefix => firstFour.startsWith(prefix))) {
-      return "Jio";
-    }
-    // Airtel prefixes
-    if (['9910', '9911', '9912', '7800', '7801', '7802'].some(prefix => firstFour.startsWith(prefix))) {
-      return "Airtel";
-    }
-    // Vi (Vodafone Idea) prefixes
-    if (['9826', '9827', '9828', '7000', '7001', '7002'].some(prefix => firstFour.startsWith(prefix))) {
-      return "Vi";
-    }
-    // BSNL prefixes
-    if (['9400', '9401', '9402', '6000', '6001', '6002'].some(prefix => firstFour.startsWith(prefix))) {
-      return "BSNL";
-    }
+    // Enhanced Jio detection
+    const jioPatterns = [
+      '8910', '8911', '8912', '8913', '8914', '8915', '8916', '8917', '8918', '8919',
+      '7023', '7024', '7025', '7026', '7027', '7028', '7029', '7030', '7031', '7032'
+    ];
+    
+    // Enhanced Airtel detection  
+    const airtelPatterns = [
+      '9910', '9911', '9912', '9913', '9914', '9915', '9916', '9917', '9918', '9919',
+      '7800', '7801', '7802', '7803', '7804', '7805', '7806', '7807', '7808', '7809',
+      '8800', '8801', '8802', '8803', '8804', '8805', '8806', '8807', '8808', '8809'
+    ];
+    
+    // Enhanced Vi detection
+    const viPatterns = [
+      '9826', '9827', '9828', '9829', '9830', '9831', '9832', '9833', '9834', '9835',
+      '7000', '7001', '7002', '7003', '7004', '7005', '7006', '7007', '7008', '7009',
+      '9400', '9401', '9402', '9403', '9404', '9405', '9406', '9407', '9408', '9409'
+    ];
+    
+    // Enhanced BSNL detection
+    const bsnlPatterns = [
+      '9400', '9401', '9402', '9403', '9404', '9405', '9406', '9407', '9408', '9409',
+      '6000', '6001', '6002', '6003', '6004', '6005', '6006', '6007', '6008', '6009'
+    ];
+
+    if (jioPatterns.some(pattern => firstFour.startsWith(pattern))) return "Jio";
+    if (airtelPatterns.some(pattern => firstFour.startsWith(pattern))) return "Airtel";
+    if (viPatterns.some(pattern => firstFour.startsWith(pattern))) return "Vi";
+    if (bsnlPatterns.some(pattern => firstFour.startsWith(pattern))) return "BSNL";
     
     return "Unknown";
   };
 
   const handlePhoneChange = (value: string) => {
-    setPhoneNumber(value);
-    if (value.length >= 4) {
-      const detectedOperator = detectOperator(value);
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+    setPhoneNumber(numericValue);
+    
+    if (numericValue.length === 10) {
+      const detectedOperator = detectOperator(numericValue);
       setOperator(detectedOperator);
+    } else {
+      setOperator("");
     }
   };
 
@@ -68,7 +89,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       return;
     }
 
-    if (operator === "Unknown") {
+    if (operator === "Unknown" || !operator) {
       toast({
         title: "Operator Not Detected",
         description: "Could not detect operator for this number",
@@ -78,7 +99,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
     }
 
     const rechargeAmount = parseFloat(amount);
-    const commission = rechargeAmount * 0.02; // 2% commission
+    const commission = rechargeAmount * 0.02;
     const finalAmount = rechargeAmount + commission;
 
     const rechargeData = {
@@ -91,7 +112,9 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       totalAmount: finalAmount,
       status: "Success",
       date: new Date().toISOString().split('T')[0],
-      fullNumber: phoneNumber
+      fullNumber: phoneNumber,
+      canComplain: true,
+      canRepeat: true
     };
 
     toast({
@@ -99,7 +122,6 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       description: `Processing ₹${rechargeAmount} recharge for ${operator}...`,
     });
 
-    // Simulate recharge process
     setTimeout(() => {
       onSuccess(rechargeData);
       onClose();
@@ -133,10 +155,19 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
             />
           </div>
           
-          {operator && operator !== "Unknown" && (
-            <div className="p-3 bg-green-light rounded-lg">
+          {phoneNumber.length === 10 && operator && operator !== "Unknown" && (
+            <div className="p-3 bg-green-light rounded-lg flex items-center space-x-2">
+              <Check size={16} className="text-green-primary" />
               <p className="text-sm text-green-primary font-medium">
                 Detected Operator: {operator}
+              </p>
+            </div>
+          )}
+
+          {phoneNumber.length === 10 && operator === "Unknown" && (
+            <div className="p-3 bg-red-50 rounded-lg">
+              <p className="text-sm text-red-600 font-medium">
+                Operator not detected for this number
               </p>
             </div>
           )}
@@ -174,7 +205,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
             <Button
               onClick={handleRecharge}
               className="flex-1 green-gradient text-white"
-              disabled={!phoneNumber || !amount || operator === "Unknown"}
+              disabled={!phoneNumber || phoneNumber.length !== 10 || !amount || operator === "Unknown" || !operator}
             >
               Recharge Now
             </Button>

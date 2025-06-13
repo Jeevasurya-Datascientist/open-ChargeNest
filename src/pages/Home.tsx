@@ -9,12 +9,14 @@ import OffersSection from "@/components/home/OffersSection";
 import AddMoneyDialog from "@/components/wallet/AddMoneyDialog";
 import QuickRechargeDialog from "@/components/recharge/QuickRechargeDialog";
 import BillPaymentDialog from "@/components/bills/BillPaymentDialog";
+import ElectricityBillDialog from "@/components/bills/ElectricityBillDialog";
 
 const Home = () => {
   const [walletBalance, setWalletBalance] = useState(2450);
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showQuickRecharge, setShowQuickRecharge] = useState(false);
   const [showBillPayment, setShowBillPayment] = useState(false);
+  const [showElectricityBill, setShowElectricityBill] = useState(false);
   const [billType, setBillType] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
 
@@ -45,7 +47,9 @@ const Home = () => {
   const handleServiceClick = (serviceType: string) => {
     if (serviceType === "Quick Recharge") {
       setShowQuickRecharge(true);
-    } else if (["DTH", "Electricity", "Gas", "Water", "Broadband"].includes(serviceType)) {
+    } else if (serviceType === "Electricity") {
+      setShowElectricityBill(true);
+    } else if (["DTH", "Gas", "Water", "Broadband"].includes(serviceType)) {
       setBillType(serviceType);
       setShowBillPayment(true);
     }
@@ -78,6 +82,12 @@ const Home = () => {
         isOpen={showQuickRecharge}
         onClose={() => setShowQuickRecharge(false)}
         onSuccess={handleRecharge}
+      />
+      
+      <ElectricityBillDialog
+        isOpen={showElectricityBill}
+        onClose={() => setShowElectricityBill(false)}
+        onSuccess={handleBillPayment}
       />
       
       <BillPaymentDialog
