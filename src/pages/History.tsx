@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { Card } from "@/components/ui/card";
@@ -25,54 +24,22 @@ const History = () => {
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [complaintMessage, setComplaintMessage] = useState("");
+  const [transactions, setTransactions] = useState<any[]>([]);
   const { toast } = useToast();
 
-  const transactions = [
-    {
-      id: "TXN001",
-      type: "Mobile Recharge",
-      operator: "Jio",
-      number: "****1234",
-      amount: 199,
-      status: "Success",
-      date: "2024-01-10",
-      icon: Phone,
-      canComplain: true,
-      canRepeat: true
-    },
-    {
-      id: "TXN002", 
-      type: "Electricity Bill",
-      operator: "MSEB",
-      number: "****5678",
-      amount: 850,
-      status: "Success",
-      date: "2024-01-09",
-      icon: Settings,
-      canComplain: true,
-      canRepeat: true
-    },
-    {
-      id: "TXN003",
-      type: "DTH Recharge",
-      operator: "Tata Sky",
-      number: "****9012",
-      amount: 299,
-      status: "Pending",
-      date: "2024-01-08",
-      icon: Settings,
-      canComplain: true,
-      canRepeat: false
-    }
-  ];
+  useEffect(() => {
+    // Load transactions from localStorage
+    const savedHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
+    setTransactions(savedHistory);
+  }, []);
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.operator.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = transaction.operator?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.id?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || transaction.status.toLowerCase() === statusFilter;
-    const matchesType = typeFilter === "all" || transaction.type.toLowerCase().includes(typeFilter.toLowerCase());
+    const matchesStatus = statusFilter === "all" || transaction.status?.toLowerCase() === statusFilter;
+    const matchesType = typeFilter === "all" || transaction.type?.toLowerCase().includes(typeFilter.toLowerCase());
     
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -86,6 +53,47 @@ const History = () => {
     toast({
       title: "Repeat Transaction",
       description: `Repeating ${transaction.type} for ${transaction.operator}`,
+    });
+  };
+
+  const generatePDFReceipt = (transaction: any) => {
+    const receiptContent = `
+GreenCharge - Official Receipt
+
+Transaction Details:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Transaction ID: ${transaction.id}
+Type: ${transaction.type}
+Operator: ${transaction.operator}
+Number: ${transaction.number}
+Amount: ₹${transaction.amount}
+Status: ${transaction.status}
+Date: ${transaction.date}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Thank you for using GreenCharge!
+Visit us at: www.greencharge.com
+Support: +91 1800-XXX-XXXX
+
+Terms apply. Visit our website for complete terms and conditions.
+    `;
+
+    // Create a blob with the receipt content
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary download link
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `GreenCharge_Receipt_${transaction.id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Receipt Downloaded",
+      description: "Receipt has been saved to your downloads",
     });
   };
 
@@ -106,11 +114,7 @@ Date: ${transaction.date}
         text: receiptText,
       });
     } else {
-      navigator.clipboard.writeText(receiptText);
-      toast({
-        title: "Receipt Copied",
-        description: "Receipt details copied to clipboard",
-      });
+      generatePDFReceipt(transaction);
     }
   };
 
@@ -126,7 +130,23 @@ Date: ${transaction.date}
 
     const complaintId = `CMP${Date.now()}`;
     
-    // Simulate sending to admin panel
+    // Save complaint to localStorage for admin panel
+    const existingComplaints = JSON.parse(localStorage.getItem('complaints') || '[]');
+    const newComplaint = {
+      id: complaintId,
+      transactionId: selectedTransaction.id,
+      transactionType: selectedTransaction.type,
+      amount: selectedTransaction.amount,
+      operator: selectedTransaction.operator,
+      message: complaintMessage,
+      status: "Open",
+      createdAt: new Date().toISOString(),
+      userId: "USER001" // This would come from auth in real app
+    };
+    
+    existingComplaints.push(newComplaint);
+    localStorage.setItem('complaints', JSON.stringify(existingComplaints));
+    
     toast({
       title: "Complaint Registered",
       description: `Complaint ID: ${complaintId}. We'll resolve this soon.`,
@@ -193,7 +213,7 @@ Date: ${transaction.date}
             >
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-light rounded-lg">
-                  <transaction.icon size={20} className="text-green-primary" />
+                  <Phone size={20} className="text-green-primary" />
                 </div>
                 
                 <div className="flex-1">
@@ -212,18 +232,14 @@ Date: ${transaction.date}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {transaction.canComplain && (
-                            <DropdownMenuItem onClick={() => handleComplaint(transaction)}>
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Raise Complaint
-                            </DropdownMenuItem>
-                          )}
-                          {transaction.canRepeat && (
-                            <DropdownMenuItem onClick={() => handleRepeat(transaction)}>
-                              <Repeat className="mr-2 h-4 w-4" />
-                              Repeat Recharge
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem onClick={() => handleComplaint(transaction)}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Raise Complaint
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRepeat(transaction)}>
+                            <Repeat className="mr-2 h-4 w-4" />
+                            Repeat Recharge
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleShare(transaction)}>
                             <Share className="mr-2 h-4 w-4" />
                             Share Receipt
