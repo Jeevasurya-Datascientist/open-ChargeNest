@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -82,17 +81,18 @@ const MobileRechargeDialog = ({ isOpen, onClose, onSuccess }: MobileRechargeDial
       return;
     }
 
-    const commission = selectedPlan.amount * 0.02;
-    const finalAmount = selectedPlan.amount + commission;
+    const totalAmount = selectedPlan.amount;
+    const commission = totalAmount * 0.02; // 2% commission deducted
+    const rechargeAmount = totalAmount - commission; // Amount after commission deduction
 
     const rechargeData = {
       id: `TXN${Date.now()}`,
       type: "Mobile Recharge",
       operator,
       number: `****${phoneNumber.slice(-4)}`,
-      amount: selectedPlan.amount,
+      amount: rechargeAmount,
       commission,
-      totalAmount: finalAmount,
+      totalAmount,
       status: "Success",
       date: new Date().toISOString().split('T')[0],
       fullNumber: phoneNumber,
@@ -103,7 +103,7 @@ const MobileRechargeDialog = ({ isOpen, onClose, onSuccess }: MobileRechargeDial
 
     toast({
       title: "Recharge Initiated",
-      description: `Processing ₹${selectedPlan.amount} recharge for ${operator}...`,
+      description: `Processing ₹${rechargeAmount.toFixed(2)} recharge for ${operator}...`,
     });
 
     setTimeout(() => {
@@ -116,7 +116,7 @@ const MobileRechargeDialog = ({ isOpen, onClose, onSuccess }: MobileRechargeDial
       setPlans([]);
       toast({
         title: "Recharge Successful",
-        description: `₹${selectedPlan.amount} recharged successfully!`,
+        description: `₹${rechargeAmount.toFixed(2)} recharged successfully!`,
       });
     }, 2000);
   };
@@ -301,13 +301,13 @@ const MobileRechargeDialog = ({ isOpen, onClose, onSuccess }: MobileRechargeDial
                 <span>Plan Amount:</span>
                 <span>₹{selectedPlan.amount}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-red-600">
                 <span>Commission (2%):</span>
-                <span>₹{(selectedPlan.amount * 0.02).toFixed(2)}</span>
+                <span>-₹{(selectedPlan.amount * 0.02).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium">
-                <span>Total Amount:</span>
-                <span>₹{(selectedPlan.amount * 1.02).toFixed(2)}</span>
+                <span>Recharge Amount:</span>
+                <span>₹{(selectedPlan.amount * 0.98).toFixed(2)}</span>
               </div>
             </div>
           )}

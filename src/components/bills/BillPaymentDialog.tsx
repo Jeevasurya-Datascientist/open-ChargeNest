@@ -47,9 +47,9 @@ const BillPaymentDialog = ({ isOpen, onClose, onSuccess, billType }: BillPayment
       return;
     }
 
-    const billAmount = parseFloat(amount);
-    const commission = billAmount * 0.015; // 1.5% commission for bills
-    const finalAmount = billAmount + commission;
+    const totalAmount = parseFloat(amount);
+    const commission = totalAmount * 0.015; // 1.5% commission deducted
+    const billAmount = totalAmount - commission; // Amount after commission deduction
 
     const billData = {
       id: `TXN${Date.now()}`,
@@ -58,7 +58,7 @@ const BillPaymentDialog = ({ isOpen, onClose, onSuccess, billType }: BillPayment
       number: `****${billNumber.slice(-4)}`,
       amount: billAmount,
       commission,
-      totalAmount: finalAmount,
+      totalAmount,
       status: "Success",
       date: new Date().toISOString().split('T')[0],
       fullNumber: billNumber
@@ -66,7 +66,7 @@ const BillPaymentDialog = ({ isOpen, onClose, onSuccess, billType }: BillPayment
 
     toast({
       title: "Payment Initiated",
-      description: `Processing ₹${billAmount} payment for ${billType}...`,
+      description: `Processing ₹${billAmount.toFixed(2)} payment for ${billType}...`,
     });
 
     setTimeout(() => {
@@ -77,7 +77,7 @@ const BillPaymentDialog = ({ isOpen, onClose, onSuccess, billType }: BillPayment
       setProvider("");
       toast({
         title: "Payment Successful",
-        description: `₹${billAmount} paid successfully!`,
+        description: `₹${billAmount.toFixed(2)} paid successfully!`,
       });
     }, 2000);
   };
@@ -131,16 +131,16 @@ const BillPaymentDialog = ({ isOpen, onClose, onSuccess, billType }: BillPayment
           {amount && (
             <div className="p-3 bg-gray-50 rounded-lg space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Bill Amount:</span>
+                <span>Total Amount:</span>
                 <span>₹{amount}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-red-600">
                 <span>Commission (1.5%):</span>
-                <span>₹{(parseFloat(amount || "0") * 0.015).toFixed(2)}</span>
+                <span>-₹{(parseFloat(amount || "0") * 0.015).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium">
-                <span>Total Amount:</span>
-                <span>₹{(parseFloat(amount || "0") * 1.015).toFixed(2)}</span>
+                <span>Bill Amount:</span>
+                <span>₹{(parseFloat(amount || "0") * 0.985).toFixed(2)}</span>
               </div>
             </div>
           )}

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -70,15 +69,16 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
   };
 
   const handlePayment = () => {
-    const commission = billInfo.billAmount * 0.015;
-    const totalAmount = billInfo.billAmount + commission;
+    const totalAmount = billInfo.billAmount;
+    const commission = totalAmount * 0.015; // 1.5% commission deducted
+    const billAmount = totalAmount - commission; // Amount after commission deduction
 
     const billData = {
       id: `TXN${Date.now()}`,
       type: "Electricity Bill",
       operator: billInfo.board,
       number: `****${consumerId.slice(-4)}`,
-      amount: billInfo.billAmount,
+      amount: billAmount,
       commission,
       totalAmount,
       status: "Success",
@@ -92,7 +92,7 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
 
     toast({
       title: "Payment Initiated",
-      description: `Processing ₹${billInfo.billAmount} payment...`,
+      description: `Processing ₹${billAmount.toFixed(2)} payment...`,
     });
 
     setTimeout(() => {
@@ -104,7 +104,7 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
       setBillInfo(null);
       toast({
         title: "Payment Successful",
-        description: `₹${billInfo.billAmount} paid successfully!`,
+        description: `₹${billAmount.toFixed(2)} paid successfully!`,
       });
     }, 2000);
   };
@@ -205,16 +205,16 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
 
             <div className="p-3 bg-gray-50 rounded-lg space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Bill Amount:</span>
+                <span>Total Amount:</span>
                 <span>₹{billInfo.billAmount}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-red-600">
                 <span>Commission (1.5%):</span>
-                <span>₹{(billInfo.billAmount * 0.015).toFixed(2)}</span>
+                <span>-₹{(billInfo.billAmount * 0.015).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium">
-                <span>Total Amount:</span>
-                <span>₹{(billInfo.billAmount * 1.015).toFixed(2)}</span>
+                <span>Bill Amount:</span>
+                <span>₹{(billInfo.billAmount * 0.985).toFixed(2)}</span>
               </div>
             </div>
 

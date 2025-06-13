@@ -60,9 +60,9 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       return;
     }
 
-    const rechargeAmount = parseFloat(amount);
-    const commission = rechargeAmount * 0.02;
-    const finalAmount = rechargeAmount + commission;
+    const totalAmount = parseFloat(amount);
+    const commission = totalAmount * 0.02; // 2% commission deducted
+    const rechargeAmount = totalAmount - commission; // Amount after commission deduction
 
     const rechargeData = {
       id: `TXN${Date.now()}`,
@@ -71,7 +71,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       number: `****${phoneNumber.slice(-4)}`,
       amount: rechargeAmount,
       commission,
-      totalAmount: finalAmount,
+      totalAmount,
       status: "Success",
       date: new Date().toISOString().split('T')[0],
       fullNumber: phoneNumber,
@@ -81,7 +81,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
 
     toast({
       title: "Recharge Initiated",
-      description: `Processing ₹${rechargeAmount} recharge for ${operator}...`,
+      description: `Processing ₹${rechargeAmount.toFixed(2)} recharge for ${operator}...`,
     });
 
     setTimeout(() => {
@@ -92,7 +92,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       setOperator("");
       toast({
         title: "Recharge Successful",
-        description: `₹${rechargeAmount} recharged successfully!`,
+        description: `₹${rechargeAmount.toFixed(2)} recharged successfully!`,
       });
     }, 2000);
   };
@@ -156,16 +156,16 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
           {amount && (
             <div className="p-3 bg-gray-50 rounded-lg space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Recharge Amount:</span>
+                <span>Total Amount:</span>
                 <span>₹{amount}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-red-600">
                 <span>Commission (2%):</span>
-                <span>₹{(parseFloat(amount || "0") * 0.02).toFixed(2)}</span>
+                <span>-₹{(parseFloat(amount || "0") * 0.02).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-medium">
-                <span>Total Amount:</span>
-                <span>₹{(parseFloat(amount || "0") * 1.02).toFixed(2)}</span>
+                <span>Recharge Amount:</span>
+                <span>₹{(parseFloat(amount || "0") * 0.98).toFixed(2)}</span>
               </div>
             </div>
           )}
