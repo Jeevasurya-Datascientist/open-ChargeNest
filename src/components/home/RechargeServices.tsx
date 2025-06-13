@@ -2,7 +2,11 @@
 import { Phone, Settings, Bell, Wallet, Calendar, Search } from "lucide-react";
 import ServiceCard from "@/components/ui/service-card";
 
-const RechargeServices = () => {
+interface RechargeServicesProps {
+  onServiceClick?: (serviceType: string) => void;
+}
+
+const RechargeServices = ({ onServiceClick }: RechargeServicesProps) => {
   const services = [
     { icon: Phone, title: "Mobile", subtitle: "All operators", color: "primary" },
     { icon: Settings, title: "DTH", subtitle: "Tata Sky, Dish TV", color: "secondary" },
@@ -13,6 +17,14 @@ const RechargeServices = () => {
     { icon: Settings, title: "Metro", subtitle: "Smart cards", color: "primary" },
     { icon: Phone, title: "FASTag", subtitle: "Toll payments", color: "secondary" },
   ];
+
+  const handleServiceClick = (serviceTitle: string) => {
+    if (serviceTitle === "Mobile") {
+      onServiceClick?.("Quick Recharge");
+    } else {
+      onServiceClick?.(serviceTitle);
+    }
+  };
 
   return (
     <div className="px-4 mb-6">
@@ -25,6 +37,7 @@ const RechargeServices = () => {
             title={service.title}
             subtitle={service.subtitle}
             gradient={index % 3 === 0}
+            onClick={() => handleServiceClick(service.title)}
             className="animate-slide-up"
             style={{ animationDelay: `${index * 0.1}s` }}
           />

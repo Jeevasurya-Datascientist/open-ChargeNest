@@ -2,12 +2,37 @@
 import { Phone, Settings, Wallet, Clock } from "lucide-react";
 import ServiceCard from "@/components/ui/service-card";
 
-const QuickActions = () => {
+interface QuickActionsProps {
+  onQuickRecharge?: () => void;
+  onAddMoney?: () => void;
+}
+
+const QuickActions = ({ onQuickRecharge, onAddMoney }: QuickActionsProps) => {
   const quickActions = [
-    { icon: Phone, title: "Quick Recharge", subtitle: "Last: Jio ****1234" },
-    { icon: Settings, title: "Bill Payment", subtitle: "Electricity, Gas" },
-    { icon: Wallet, title: "Add Money", subtitle: "To wallet" },
-    { icon: Clock, title: "Recent", subtitle: "View history" },
+    { 
+      icon: Phone, 
+      title: "Quick Recharge", 
+      subtitle: "Last: Jio ****1234",
+      onClick: onQuickRecharge
+    },
+    { 
+      icon: Settings, 
+      title: "Bill Payment", 
+      subtitle: "Electricity, Gas",
+      onClick: () => {}
+    },
+    { 
+      icon: Wallet, 
+      title: "Add Money", 
+      subtitle: "To wallet",
+      onClick: onAddMoney
+    },
+    { 
+      icon: Clock, 
+      title: "Recent", 
+      subtitle: "View history",
+      onClick: () => {}
+    },
   ];
 
   return (
@@ -20,6 +45,7 @@ const QuickActions = () => {
             icon={action.icon}
             title={action.title}
             subtitle={action.subtitle}
+            onClick={action.onClick}
             className="animate-fade-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           />

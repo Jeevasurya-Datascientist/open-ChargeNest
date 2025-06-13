@@ -1,6 +1,7 @@
 
 import { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import React from "react";
 
 interface ServiceCardProps {
   icon: LucideIcon;
@@ -9,6 +10,7 @@ interface ServiceCardProps {
   onClick?: () => void;
   className?: string;
   gradient?: boolean;
+  style?: React.CSSProperties;
 }
 
 const ServiceCard = ({ 
@@ -17,7 +19,8 @@ const ServiceCard = ({
   subtitle, 
   onClick, 
   className = "",
-  gradient = false 
+  gradient = false,
+  style 
 }: ServiceCardProps) => {
   return (
     <Card 
@@ -25,6 +28,7 @@ const ServiceCard = ({
         gradient ? "green-gradient text-white" : "bg-white"
       } ${className}`}
       onClick={onClick}
+      style={style}
     >
       <div className="flex flex-col items-center text-center space-y-2">
         <div className={`p-3 rounded-full ${

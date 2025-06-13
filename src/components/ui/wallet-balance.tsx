@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 interface WalletBalanceProps {
   balance: number;
   currency?: string;
+  onAddMoney?: () => void;
 }
 
-const WalletBalance = ({ balance, currency = "₹" }: WalletBalanceProps) => {
+const WalletBalance = ({ balance, currency = "₹", onAddMoney }: WalletBalanceProps) => {
   const [showBalance, setShowBalance] = useState(true);
 
   return (
@@ -41,6 +42,7 @@ const WalletBalance = ({ balance, currency = "₹" }: WalletBalanceProps) => {
           variant="secondary" 
           size="sm" 
           className="flex-1 bg-white/20 hover:bg-white/30 text-white border-white/30"
+          onClick={onAddMoney}
         >
           Add Money
         </Button>
