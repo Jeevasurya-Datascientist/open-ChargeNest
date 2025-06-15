@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Check } from "lucide-react";
 import { detectOperator, operators } from "@/utils/operatorDetection";
+import { WalletManager } from "@/utils/walletManager";
 
 interface QuickRechargeDialogProps {
   isOpen: boolean;
@@ -64,6 +65,18 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
     const commission = totalAmount * 0.02; // 2% commission deducted
     const rechargeAmount = totalAmount - commission; // Amount after commission deduction
 
+    // Check wallet balance and deduct money
+    const walletResult = WalletManager.deductMoney(totalAmount, `${operator} Recharge - ${phoneNumber.slice(-4)}`);
+    
+    if (!walletResult.success) {
+      toast({
+        title: "Insufficient Balance",
+        description: `Your wallet balance is insufficient. Please add money to wallet.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     const rechargeData = {
       id: `TXN${Date.now()}`,
       type: "Mobile Recharge",
@@ -92,7 +105,7 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
       setOperator("");
       toast({
         title: "Recharge Successful",
-        description: `₹${rechargeAmount.toFixed(2)} recharged successfully!`,
+        description: `₹${rechargeAmount.toFixed(2)} recharged successfully! Wallet balance updated.`,
       });
     }, 2000);
   };
@@ -166,6 +179,10 @@ const QuickRechargeDialog = ({ isOpen, onClose, onSuccess }: QuickRechargeDialog
               <div className="flex justify-between text-sm font-medium">
                 <span>Recharge Amount:</span>
                 <span>₹{(parseFloat(amount || "0") * 0.98).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium text-blue-600">
+                <span>Wallet Balance:</span>
+                <span>₹{WalletManager.getBalance().toFixed(2)}</span>
               </div>
             </div>
           )}

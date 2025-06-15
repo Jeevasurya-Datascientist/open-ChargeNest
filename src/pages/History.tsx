@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
@@ -65,7 +66,7 @@ Transaction Details:
 Transaction ID: ${transaction.id}
 Type: ${transaction.type}
 Operator: ${transaction.operator}
-Number: ${transaction.number}
+Number: ${transaction.fullNumber || transaction.number}
 Amount: ₹${transaction.amount}
 Status: ${transaction.status}
 Date: ${transaction.date}
@@ -103,6 +104,7 @@ GreenCharge Receipt
 Transaction ID: ${transaction.id}
 Type: ${transaction.type}
 Operator: ${transaction.operator}
+Number: ${transaction.fullNumber || transaction.number}
 Amount: ₹${transaction.amount}
 Status: ${transaction.status}
 Date: ${transaction.date}
@@ -252,7 +254,7 @@ Date: ${transaction.date}
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {transaction.operator} • {transaction.number}
+                        {transaction.operator} • {transaction.fullNumber || transaction.number}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {transaction.date} • {transaction.id}

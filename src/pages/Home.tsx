@@ -21,6 +21,7 @@ const Home = () => {
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [billType, setBillType] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const saveTransactionToHistory = (transactionData: any) => {
     const existingHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
@@ -48,15 +49,19 @@ const Home = () => {
     }
   };
 
+  const handleBalanceChange = (newBalance: number) => {
+    setWalletBalance(newBalance);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
       <div className="space-y-6">
         <WalletBalance 
-          balance={2450}
           onAddMoney={() => setShowAddMoney(true)}
           onTransfer={() => setShowTransfer(true)}
+          onBalanceChange={handleBalanceChange}
         />
         <QuickActions 
           onQuickRecharge={() => setShowQuickRecharge(true)}
@@ -95,7 +100,6 @@ const Home = () => {
         isOpen={showAddMoney}
         onClose={() => setShowAddMoney(false)}
         onSuccess={(amount) => {
-          // Handle successful money addition
           console.log('Money added:', amount);
         }}
       />
