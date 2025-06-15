@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { ArrowLeft, CreditCard, User } from "lucide-react";
 import { WalletManager } from "@/utils/walletManager";
 import { billerLogos } from "@/utils/operatorDetection";
+import { generateConsumerName } from "@/utils/nameGenerator";
 
 interface BillPaymentPageProps {
   onBack: () => void;
@@ -19,6 +19,7 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
   const [billNumber, setBillNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
@@ -36,6 +37,34 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
         return ["Airtel", "Jio Fiber", "ACT", "BSNL"];
       default:
         return [];
+    }
+  };
+
+  const getMaxLength = (provider: string): number => {
+    if (billType !== "DTH") return undefined;
+    
+    switch (provider) {
+      case "Sun Direct":
+        return 11;
+      case "Airtel Digital TV":
+      case "Tata Play (Sky)":
+      case "Videocon D2H":
+        return 10;
+      case "Dish TV":
+        return 11;
+      case "Big TV":
+        return 12;
+      default:
+        return undefined;
+    }
+  };
+
+  const detectCustomerName = (provider: string, billNumber: string) => {
+    if (billType === "DTH" && billNumber.length >= 8) {
+      const name = generateConsumerName(billNumber + provider);
+      setCustomerName(name);
+    } else {
+      setCustomerName("");
     }
   };
 
@@ -98,6 +127,21 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
       default:
         return "Enter bill number";
     }
+  };
+
+  const handleBillNumberChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    const maxLen = getMaxLength(provider);
+    const limitedValue = maxLen ? numericValue.slice(0, maxLen) : numericValue;
+    
+    setBillNumber(limitedValue);
+    detectCustomerName(provider, limitedValue);
+  };
+
+  const handleProviderChange = (selectedProvider: string) => {
+    setProvider(selectedProvider);
+    setBillNumber(""); // Reset bill number when provider changes
+    setCustomerName(""); // Reset customer name
   };
 
   const handlePayment = () => {
@@ -192,7 +236,7 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
       <div className="p-4 space-y-6">
         <div>
           <Label htmlFor="provider">Service Provider</Label>
-          <Select onValueChange={setProvider}>
+          <Select onValueChange={handleProviderChange}>
             <SelectTrigger className="mt-2 h-12">
               <SelectValue placeholder="Select provider" />
             </SelectTrigger>
@@ -222,10 +266,26 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
             id="bill-number"
             placeholder={getPlaceholderText()}
             value={billNumber}
-            onChange={(e) => setBillNumber(e.target.value)}
+            onChange={(e) => handleBillNumberChange(e.target.value)}
+            maxLength={getMaxLength(provider)}
             className="mt-2 h-12 text-lg"
           />
+          {provider && billType === "DTH" && (
+            <p className="text-sm text-gray-500 mt-1">
+              Max {getMaxLength(provider)} digits allowed
+            </p>
+          )}
         </div>
+
+        {customerName && billType === "DTH" && (
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center space-x-2">
+              <User size={16} className="text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Customer Name:</span>
+              <span className="text-sm text-blue-700">{customerName}</span>
+            </div>
+          </div>
+        )}
 
         <div>
           <Label htmlFor="bill-amount">Amount</Label>
