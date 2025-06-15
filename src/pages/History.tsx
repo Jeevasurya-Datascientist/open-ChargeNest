@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Phone, Settings, Search, Filter, MoreVertical, MessageSquare, Repeat, Share } from "lucide-react";
+import { Check, Clock, Phone, Search, Filter, MoreVertical, MessageSquare, Repeat, Share, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,10 +26,10 @@ const History = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [complaintMessage, setComplaintMessage] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [showCommissionFor, setShowCommissionFor] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load transactions from localStorage
     const savedHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
     setTransactions(savedHistory);
   }, []);
@@ -46,8 +46,23 @@ const History = () => {
   });
 
   const handleComplaint = (transaction: any) => {
-    setSelectedTransaction(transaction);
-    setShowComplaintDialog(true);
+    const complaintText = `Transaction Issue Report:
+Transaction ID: ${transaction.id}
+Operator: ${transaction.operator}
+Phone Number: ${transaction.fullNumber || transaction.number}
+Amount: ₹${transaction.amount}
+Date: ${transaction.date}
+Status: ${transaction.status}
+
+Issue: Please help resolve this transaction issue.`;
+
+    const whatsappUrl = `https://wa.me/919789456787?text=${encodeURIComponent(complaintText)}`;
+    window.open(whatsappUrl, '_blank');
+
+    toast({
+      title: "Complaint Initiated",
+      description: "Opening WhatsApp to connect with admin support",
+    });
   };
 
   const handleRepeat = (transaction: any) => {
@@ -59,31 +74,45 @@ const History = () => {
 
   const generatePDFReceipt = (transaction: any) => {
     const receiptContent = `
-GreenCharge - Official Receipt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        GREENCHARGE RECEIPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Transaction Details:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+──────────────────────────────────────────────────────────────
+
 Transaction ID: ${transaction.id}
-Type: ${transaction.type}
+Date & Time: ${transaction.date}
+Transaction Type: ${transaction.type}
+
+Service Details:
+──────────────────────────────────────────────────────────────
 Operator: ${transaction.operator}
-Number: ${transaction.fullNumber || transaction.number}
+Mobile Number: ${transaction.fullNumber || transaction.number}
 Amount: ₹${transaction.amount}
 Status: ${transaction.status}
-Date: ${transaction.date}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Payment Method: ${transaction.paymentMethod || 'Wallet'}
+
+Customer Information:
+──────────────────────────────────────────────────────────────
+Service provided by GreenCharge Hub
+All transactions are secured and encrypted
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Thank you for using GreenCharge!
-Visit us at: www.greencharge.com
-Support: +91 1800-XXX-XXXX
+For support: contact@greencharge.com
+Support WhatsApp: +91 9789456787
 
-Terms apply. Visit our website for complete terms and conditions.
+Terms and conditions apply.
+Visit www.greencharge.com for more details.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `;
 
-    // Create a blob with the receipt content
     const blob = new Blob([receiptContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
-    // Create a temporary download link
     const link = document.createElement('a');
     link.href = url;
     link.download = `GreenCharge_Receipt_${transaction.id}.txt`;
@@ -101,6 +130,7 @@ Terms apply. Visit our website for complete terms and conditions.
   const handleShare = (transaction: any) => {
     const receiptText = `
 GreenCharge Receipt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Transaction ID: ${transaction.id}
 Type: ${transaction.type}
 Operator: ${transaction.operator}
@@ -108,6 +138,8 @@ Number: ${transaction.fullNumber || transaction.number}
 Amount: ₹${transaction.amount}
 Status: ${transaction.status}
 Date: ${transaction.date}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Thank you for using GreenCharge!
     `;
     
     if (navigator.share) {
@@ -120,43 +152,8 @@ Date: ${transaction.date}
     }
   };
 
-  const submitComplaint = () => {
-    if (!complaintMessage.trim()) {
-      toast({
-        title: "Missing Message",
-        description: "Please enter a complaint message",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const complaintId = `CMP${Date.now()}`;
-    
-    // Save complaint to localStorage for admin panel
-    const existingComplaints = JSON.parse(localStorage.getItem('complaints') || '[]');
-    const newComplaint = {
-      id: complaintId,
-      transactionId: selectedTransaction.id,
-      transactionType: selectedTransaction.type,
-      amount: selectedTransaction.amount,
-      operator: selectedTransaction.operator,
-      message: complaintMessage,
-      status: "Open",
-      createdAt: new Date().toISOString(),
-      userId: "USER001" // This would come from auth in real app
-    };
-    
-    existingComplaints.push(newComplaint);
-    localStorage.setItem('complaints', JSON.stringify(existingComplaints));
-    
-    toast({
-      title: "Complaint Registered",
-      description: `Complaint ID: ${complaintId}. We'll resolve this soon.`,
-    });
-
-    setShowComplaintDialog(false);
-    setComplaintMessage("");
-    setSelectedTransaction(null);
+  const toggleCommissionView = (transactionId: string) => {
+    setShowCommissionFor(showCommissionFor === transactionId ? null : transactionId);
   };
 
   return (
@@ -164,7 +161,6 @@ Date: ${transaction.date}
       <Header title="Transaction History" />
       
       <div className="p-4 space-y-4">
-        {/* Search and Filters */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -205,7 +201,6 @@ Date: ${transaction.date}
           </div>
         </div>
 
-        {/* Transactions List */}
         <div className="space-y-3">
           {filteredTransactions.map((transaction, index) => (
             <Card 
@@ -227,6 +222,16 @@ Date: ${transaction.date}
                       <span className="font-bold text-foreground">
                         ₹{transaction.amount}
                       </span>
+                      {transaction.commission && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0"
+                          onClick={() => toggleCommissionView(transaction.id)}
+                        >
+                          {showCommissionFor === transaction.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -259,6 +264,11 @@ Date: ${transaction.date}
                       <p className="text-xs text-muted-foreground">
                         {transaction.date} • {transaction.id}
                       </p>
+                      {showCommissionFor === transaction.id && transaction.commission && (
+                        <p className="text-xs text-red-600 mt-1">
+                          Commission: ₹{transaction.commission.toFixed(2)} (2%)
+                        </p>
+                      )}
                     </div>
                     
                     <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${
@@ -288,53 +298,6 @@ Date: ${transaction.date}
           </div>
         )}
       </div>
-
-      {/* Complaint Dialog */}
-      <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-green-primary">Raise Complaint</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {selectedTransaction && (
-              <Card className="p-3 bg-gray-50">
-                <p className="text-sm"><strong>Transaction ID:</strong> {selectedTransaction.id}</p>
-                <p className="text-sm"><strong>Type:</strong> {selectedTransaction.type}</p>
-                <p className="text-sm"><strong>Amount:</strong> ₹{selectedTransaction.amount}</p>
-              </Card>
-            )}
-            
-            <div>
-              <Label htmlFor="complaint">Complaint Message</Label>
-              <Textarea
-                id="complaint"
-                placeholder="Describe your issue..."
-                value={complaintMessage}
-                onChange={(e) => setComplaintMessage(e.target.value)}
-                className="mt-1"
-                rows={4}
-              />
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button
-                onClick={submitComplaint}
-                className="flex-1 green-gradient text-white"
-                disabled={!complaintMessage.trim()}
-              >
-                Submit Complaint
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowComplaintDialog(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
       
       <BottomNavigation />
     </div>

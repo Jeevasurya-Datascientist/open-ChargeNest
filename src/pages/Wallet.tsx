@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import WalletBalance from "@/components/ui/wallet-balance";

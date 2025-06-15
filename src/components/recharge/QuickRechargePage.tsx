@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, CreditCard } from "lucide-react";
 import { detectOperator, operators } from "@/utils/operatorDetection";
 import { WalletManager } from "@/utils/walletManager";
 
@@ -17,6 +17,7 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [operator, setOperator] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handlePhoneChange = (value: string) => {
@@ -61,51 +62,65 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
 
     const totalAmount = parseFloat(amount);
     const commission = totalAmount * 0.02;
-    const rechargeAmount = totalAmount - commission;
+    const currentBalance = WalletManager.getBalance();
 
-    const walletResult = WalletManager.deductMoney(totalAmount, `${operator} Recharge - ${phoneNumber.slice(-4)}`);
-    
-    if (!walletResult.success) {
+    setIsProcessing(true);
+
+    // Check if wallet has sufficient balance
+    if (currentBalance >= totalAmount) {
+      // Deduct from wallet
+      const walletResult = WalletManager.deductMoney(totalAmount, `${operator} Recharge - ${phoneNumber.slice(-4)}`);
+      
+      if (walletResult.success) {
+        processRecharge(totalAmount, commission, "Wallet");
+      }
+    } else {
+      // Initiate UPI transaction for the exact recharge amount
       toast({
-        title: "Insufficient Balance",
-        description: `Your wallet balance is insufficient. Please add money to wallet.`,
-        variant: "destructive"
+        title: "Insufficient Wallet Balance",
+        description: `Redirecting to UPI for ₹${totalAmount} payment...`,
       });
-      return;
-    }
 
+      setTimeout(() => {
+        // Simulate UPI payment
+        processRecharge(totalAmount, commission, "UPI");
+      }, 3000);
+    }
+  };
+
+  const processRecharge = (totalAmount: number, commission: number, paymentMethod: string) => {
     const rechargeData = {
       id: `TXN${Date.now()}`,
       type: "Mobile Recharge",
       operator,
       number: `****${phoneNumber.slice(-4)}`,
-      amount: rechargeAmount,
+      amount: totalAmount,
       commission,
-      totalAmount,
       status: "Success",
       date: new Date().toISOString().split('T')[0],
       fullNumber: phoneNumber,
+      paymentMethod,
       canComplain: true,
       canRepeat: true
     };
 
-    toast({
-      title: "Recharge Initiated",
-      description: `Processing ₹${rechargeAmount.toFixed(2)} recharge for ${operator}...`,
-    });
-
     setTimeout(() => {
       onSuccess(rechargeData);
+      setIsProcessing(false);
       toast({
         title: "Recharge Successful",
-        description: `₹${rechargeAmount.toFixed(2)} recharged successfully! Wallet balance updated.`,
+        description: `₹${totalAmount} recharged successfully via ${paymentMethod}!`,
       });
     }, 2000);
   };
 
+  const currentBalance = WalletManager.getBalance();
+  const totalAmount = parseFloat(amount || "0");
+  const commission = totalAmount * 0.02;
+  const willUseUPI = currentBalance < totalAmount && totalAmount > 0;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="sticky top-0 bg-white border-b z-50">
         <div className="flex items-center p-4">
           <Button variant="ghost" size="sm" onClick={onBack} className="mr-3">
@@ -115,7 +130,6 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-4 space-y-6">
         <div>
           <Label htmlFor="phone">Phone Number</Label>
@@ -146,14 +160,6 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
           </div>
         )}
 
-        {phoneNumber.length === 10 && operator === "Unknown" && (
-          <div className="p-4 bg-red-50 rounded-lg">
-            <p className="text-red-600 font-medium">
-              Operator not detected for this number
-            </p>
-          </div>
-        )}
-
         <div>
           <Label htmlFor="recharge-amount">Recharge Amount</Label>
           <Input
@@ -168,31 +174,32 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
 
         {amount && (
           <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-            <div className="flex justify-between">
-              <span>Total Amount:</span>
-              <span>₹{amount}</span>
-            </div>
-            <div className="flex justify-between text-red-600">
-              <span>Commission (2%):</span>
-              <span>-₹{(parseFloat(amount || "0") * 0.02).toFixed(2)}</span>
-            </div>
             <div className="flex justify-between font-medium">
               <span>Recharge Amount:</span>
-              <span>₹{(parseFloat(amount || "0") * 0.98).toFixed(2)}</span>
+              <span>₹{totalAmount}</span>
             </div>
             <div className="flex justify-between font-medium text-blue-600">
               <span>Wallet Balance:</span>
-              <span>₹{WalletManager.getBalance().toFixed(2)}</span>
+              <span>₹{currentBalance.toFixed(2)}</span>
             </div>
+            {willUseUPI && (
+              <div className="flex justify-between font-medium text-orange-600">
+                <span>Payment Method:</span>
+                <div className="flex items-center space-x-1">
+                  <CreditCard size={16} />
+                  <span>UPI Payment</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         <Button
           onClick={handleRecharge}
           className="w-full green-gradient text-white h-12 text-lg"
-          disabled={!phoneNumber || phoneNumber.length !== 10 || !amount || operator === "Unknown" || !operator}
+          disabled={!phoneNumber || phoneNumber.length !== 10 || !amount || operator === "Unknown" || !operator || isProcessing}
         >
-          Recharge Now
+          {isProcessing ? "Processing..." : willUseUPI ? "Pay via UPI" : "Recharge Now"}
         </Button>
       </div>
     </div>
