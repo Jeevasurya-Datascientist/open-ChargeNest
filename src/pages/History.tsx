@@ -168,6 +168,12 @@ Thank you for using GreenCharge!
     setShowCommissionFor(showCommissionFor === transactionId ? null : transactionId);
   };
 
+  // Check if transaction is a mobile recharge (can be repeated)
+  const isMobileRecharge = (transaction: any) => {
+    return transaction.type?.toLowerCase().includes('recharge') || 
+           transaction.type?.toLowerCase().includes('mobile');
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header title="Transaction History" />
@@ -255,10 +261,12 @@ Thank you for using GreenCharge!
                             <MessageSquare className="mr-2 h-4 w-4" />
                             Raise Complaint
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleRepeat(transaction)}>
-                            <Repeat className="mr-2 h-4 w-4" />
-                            Repeat Recharge
-                          </DropdownMenuItem>
+                          {isMobileRecharge(transaction) && (
+                            <DropdownMenuItem onClick={() => handleRepeat(transaction)}>
+                              <Repeat className="mr-2 h-4 w-4" />
+                              Repeat Recharge
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleShare(transaction)}>
                             <Share className="mr-2 h-4 w-4" />
                             Share Receipt
