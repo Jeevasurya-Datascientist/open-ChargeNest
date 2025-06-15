@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Moon, Sun, Bell, Shield, Smartphone, Wifi } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -13,11 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const Settings = () => {
   const [settings, setSettings] = useState({
     darkMode: false,
-    notifications: true,
-    soundEnabled: true,
-    autoRecharge: false,
-    biometricAuth: false,
-    dataUsage: true
+    biometricAuth: false
   });
 
   const navigate = useNavigate();
@@ -26,6 +22,13 @@ const Settings = () => {
   useEffect(() => {
     const savedSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
     setSettings(prev => ({ ...prev, ...savedSettings }));
+    
+    // Apply dark mode to document
+    if (savedSettings.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
   const updateSetting = (key: string, value: boolean) => {
@@ -33,9 +36,80 @@ const Settings = () => {
     setSettings(newSettings);
     localStorage.setItem('appSettings', JSON.stringify(newSettings));
     
+    // Apply dark mode immediately
+    if (key === 'darkMode') {
+      if (value) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+    
     toast({
       title: "Settings Updated",
       description: "Your preferences have been saved.",
+    });
+  };
+
+  const handleBiometricAuth = (checked: boolean) => {
+    if (checked) {
+      // Check if biometric authentication is available
+      if ('credentials' in navigator) {
+        navigator.credentials.create({
+          publicKey: {
+            challenge: new Uint8Array(32),
+            rp: { name: "GreenCharge" },
+            user: {
+              id: new Uint8Array(16),
+              name: "user@example.com",
+              displayName: "User"
+            },
+            pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform",
+              userVerification: "required"
+            }
+          }
+        }).then(() => {
+          updateSetting('biometricAuth', true);
+          toast({
+            title: "Biometric Authentication Enabled",
+            description: "You can now use your device's biometric authentication.",
+          });
+        }).catch(() => {
+          toast({
+            title: "Biometric Authentication Unavailable",
+            description: "Your device doesn't support biometric authentication.",
+            variant: "destructive"
+          });
+        });
+      } else {
+        toast({
+          title: "Feature Not Supported",
+          description: "Biometric authentication is not supported on this device.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      updateSetting('biometricAuth', false);
+    }
+  };
+
+  const resetAllSettings = () => {
+    const defaultSettings = {
+      darkMode: false,
+      biometricAuth: false
+    };
+    
+    setSettings(defaultSettings);
+    localStorage.setItem('appSettings', JSON.stringify(defaultSettings));
+    
+    // Reset dark mode
+    document.documentElement.classList.remove('dark');
+    
+    toast({
+      title: "Settings Reset",
+      description: "All settings have been reset to default values.",
     });
   };
 
@@ -45,42 +119,16 @@ const Settings = () => {
       title: "Dark Mode",
       subtitle: "Toggle dark/light theme",
       key: "darkMode",
-      value: settings.darkMode
-    },
-    {
-      icon: Bell,
-      title: "Push Notifications",
-      subtitle: "Receive alerts and updates",
-      key: "notifications",
-      value: settings.notifications
-    },
-    {
-      icon: Smartphone,
-      title: "Sound Effects",
-      subtitle: "Enable button sounds",
-      key: "soundEnabled",
-      value: settings.soundEnabled
-    },
-    {
-      icon: Wifi,
-      title: "Auto Recharge",
-      subtitle: "Automatic balance top-up",
-      key: "autoRecharge",
-      value: settings.autoRecharge
+      value: settings.darkMode,
+      handler: (checked: boolean) => updateSetting('darkMode', checked)
     },
     {
       icon: Shield,
       title: "Biometric Authentication",
-      subtitle: "Use fingerprint/face ID",
+      subtitle: "Use device biometric authentication",
       key: "biometricAuth",
-      value: settings.biometricAuth
-    },
-    {
-      icon: Smartphone,
-      title: "Data Usage Alerts",
-      subtitle: "Monitor app data usage",
-      key: "dataUsage",
-      value: settings.dataUsage
+      value: settings.biometricAuth,
+      handler: handleBiometricAuth
     }
   ];
 
@@ -118,25 +166,26 @@ const Settings = () => {
                 <Switch
                   id={option.key}
                   checked={option.value}
-                  onCheckedChange={(checked) => updateSetting(option.key, checked)}
+                  onCheckedChange={option.handler}
                 />
               </div>
             </Card>
           ))}
 
           <div className="mt-8 space-y-3">
-            <h3 className="text-lg font-semibold">Account Actions</h3>
+            <h3 className="text-lg font-semibold">Reset Options</h3>
             
             <Card className="p-4">
-              <Button variant="outline" className="w-full">
-                Clear Cache
-              </Button>
-            </Card>
-            
-            <Card className="p-4">
-              <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50">
+              <Button 
+                variant="outline" 
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                onClick={resetAllSettings}
+              >
                 Reset All Settings
               </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                This will reset app preferences only. Your recharges, wallet, and history will not be affected.
+              </p>
             </Card>
           </div>
         </div>
