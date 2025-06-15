@@ -1,88 +1,116 @@
 
+import { useState } from "react";
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import WalletBalance from "@/components/ui/wallet-balance";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, Clock, Settings } from "lucide-react";
+import { WalletManager, WalletTransaction } from "@/utils/walletManager";
+import { Plus, Send, Clock, TrendingUp } from "lucide-react";
+import AddMoneyPage from "@/components/wallet/AddMoneyPage";
+import TransferPage from "@/components/wallet/TransferPage";
 
 const Wallet = () => {
-  const recentTransactions = [
-    { type: "Credit", amount: 500, description: "Added to wallet", time: "2 hours ago", icon: ArrowUp },
-    { type: "Debit", amount: 199, description: "Mobile recharge", time: "1 day ago", icon: ArrowDown },
-    { type: "Credit", amount: 50, description: "Cashback received", time: "2 days ago", icon: ArrowUp },
-  ];
+  const [showAddMoney, setShowAddMoney] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+
+  // Load transactions on component mount
+  React.useEffect(() => {
+    const walletTransactions = WalletManager.getTransactions();
+    setTransactions(walletTransactions);
+  }, []);
+
+  if (showAddMoney) {
+    return (
+      <AddMoneyPage
+        onBack={() => setShowAddMoney(false)}
+        onSuccess={(amount) => {
+          console.log('Money added:', amount);
+          setShowAddMoney(false);
+        }}
+      />
+    );
+  }
+
+  if (showTransfer) {
+    return (
+      <TransferPage
+        onBack={() => setShowTransfer(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header title="My Wallet" />
+      <Header />
       
-      <div className="pt-4">
-        <WalletBalance balance={2450} />
+      <div className="space-y-6">
+        <WalletBalance 
+          onAddMoney={() => setShowAddMoney(true)}
+          onTransfer={() => setShowTransfer(true)}
+        />
         
-        <div className="px-4 mb-6">
-          <div className="grid grid-cols-2 gap-3">
-            <Button className="green-gradient text-white h-12">
-              Add Money
-            </Button>
-            <Button variant="outline" className="green-border text-green-primary h-12">
-              Send Money
-            </Button>
-          </div>
-        </div>
-
-        <div className="px-4 mb-6">
-          <h2 className="text-lg font-bold text-green-primary mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="p-3 text-center">
-              <Settings className="w-6 h-6 text-green-primary mx-auto mb-2" />
-              <span className="text-xs text-muted-foreground">Auto Pay</span>
-            </Card>
-            <Card className="p-3 text-center">
-              <Clock className="w-6 h-6 text-green-primary mx-auto mb-2" />
-              <span className="text-xs text-muted-foreground">Scheduled</span>
-            </Card>
-            <Card className="p-3 text-center">
-              <Settings className="w-6 h-6 text-green-primary mx-auto mb-2" />
-              <span className="text-xs text-muted-foreground">Settings</span>
-            </Card>
-          </div>
-        </div>
-
+        {/* Quick Actions */}
         <div className="px-4">
-          <h2 className="text-lg font-bold text-green-primary mb-3">Recent Activity</h2>
-          <div className="space-y-3">
-            {recentTransactions.map((transaction, index) => (
-              <Card key={index} className="p-4 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-full ${
-                    transaction.type === "Credit" ? "bg-green-light" : "bg-red-100"
-                  }`}>
-                    <transaction.icon 
-                      size={16} 
-                      className={transaction.type === "Credit" ? "text-green-primary" : "text-red-500"} 
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-foreground">
-                        {transaction.description}
-                      </span>
-                      <span className={`font-bold text-sm ${
-                        transaction.type === "Credit" ? "text-green-primary" : "text-red-500"
-                      }`}>
-                        {transaction.type === "Credit" ? "+" : "-"}₹{transaction.amount}
-                      </span>
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                onClick={() => setShowAddMoney(true)}
+                className="flex items-center justify-center space-x-2 green-gradient text-white"
+              >
+                <Plus size={20} />
+                <span>Add Money</span>
+              </Button>
+              <Button 
+                onClick={() => setShowTransfer(true)}
+                variant="outline"
+                className="flex items-center justify-center space-x-2"
+              >
+                <Send size={20} />
+                <span>Transfer</span>
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Recent Transactions */}
+        <div className="px-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4 flex items-center space-x-2">
+              <Clock size={20} />
+              <span>Recent Transactions</span>
+            </h3>
+            {transactions.length > 0 ? (
+              <div className="space-y-3">
+                {transactions.slice(0, 5).map((transaction) => (
+                  <div key={transaction.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-full ${transaction.type === 'credit' ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <TrendingUp size={16} className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'} />
+                      </div>
+                      <div>
+                        <p className="font-medium">{transaction.description}</p>
+                        <p className="text-xs text-gray-500">{new Date(transaction.timestamp).toLocaleString()}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">{transaction.time}</p>
+                    <div className="text-right">
+                      <p className={`font-medium ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                        {transaction.type === 'credit' ? '+' : '-'}₹{transaction.amount}
+                      </p>
+                      <p className="text-xs text-gray-500">Balance: ₹{transaction.balanceAfter}</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No transactions yet</p>
+            )}
+          </Card>
         </div>
       </div>
-      
+
       <BottomNavigation />
     </div>
   );

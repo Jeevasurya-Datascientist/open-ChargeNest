@@ -6,12 +6,12 @@ import WalletBalance from "@/components/ui/wallet-balance";
 import QuickActions from "@/components/home/QuickActions";
 import RechargeServices from "@/components/home/RechargeServices";
 import OffersSection from "@/components/home/OffersSection";
-import QuickRechargeDialog from "@/components/recharge/QuickRechargeDialog";
+import QuickRechargePage from "@/components/recharge/QuickRechargePage";
 import MobileRechargeDialog from "@/components/recharge/MobileRechargeDialog";
 import BillPaymentDialog from "@/components/bills/BillPaymentDialog";
 import ElectricityBillDialog from "@/components/bills/ElectricityBillDialog";
-import AddMoneyDialog from "@/components/wallet/AddMoneyDialog";
-import TransferDialog from "@/components/wallet/TransferDialog";
+import AddMoneyPage from "@/components/wallet/AddMoneyPage";
+import TransferPage from "@/components/wallet/TransferPage";
 
 const Home = () => {
   const [showQuickRecharge, setShowQuickRecharge] = useState(false);
@@ -21,7 +21,6 @@ const Home = () => {
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [billType, setBillType] = useState("");
-  const [walletBalance, setWalletBalance] = useState(0);
 
   const saveTransactionToHistory = (transactionData: any) => {
     const existingHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
@@ -49,9 +48,38 @@ const Home = () => {
     }
   };
 
-  const handleBalanceChange = (newBalance: number) => {
-    setWalletBalance(newBalance);
-  };
+  // If any full page is shown, render that instead
+  if (showQuickRecharge) {
+    return (
+      <QuickRechargePage
+        onBack={() => setShowQuickRecharge(false)}
+        onSuccess={(data) => {
+          saveTransactionToHistory(data);
+          setShowQuickRecharge(false);
+        }}
+      />
+    );
+  }
+
+  if (showAddMoney) {
+    return (
+      <AddMoneyPage
+        onBack={() => setShowAddMoney(false)}
+        onSuccess={(amount) => {
+          console.log('Money added:', amount);
+          setShowAddMoney(false);
+        }}
+      />
+    );
+  }
+
+  if (showTransfer) {
+    return (
+      <TransferPage
+        onBack={() => setShowTransfer(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -61,7 +89,6 @@ const Home = () => {
         <WalletBalance 
           onAddMoney={() => setShowAddMoney(true)}
           onTransfer={() => setShowTransfer(true)}
-          onBalanceChange={handleBalanceChange}
         />
         <QuickActions 
           onQuickRecharge={() => setShowQuickRecharge(true)}
@@ -70,12 +97,6 @@ const Home = () => {
         <RechargeServices onServiceClick={handleServiceClick} />
         <OffersSection />
       </div>
-
-      <QuickRechargeDialog
-        isOpen={showQuickRecharge}
-        onClose={() => setShowQuickRecharge(false)}
-        onSuccess={saveTransactionToHistory}
-      />
 
       <MobileRechargeDialog
         isOpen={showMobileRecharge}
@@ -94,19 +115,6 @@ const Home = () => {
         isOpen={showElectricityBill}
         onClose={() => setShowElectricityBill(false)}
         onSuccess={saveTransactionToHistory}
-      />
-
-      <AddMoneyDialog
-        isOpen={showAddMoney}
-        onClose={() => setShowAddMoney(false)}
-        onSuccess={(amount) => {
-          console.log('Money added:', amount);
-        }}
-      />
-
-      <TransferDialog
-        isOpen={showTransfer}
-        onClose={() => setShowTransfer(false)}
       />
 
       <BottomNavigation />
