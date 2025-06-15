@@ -30,7 +30,7 @@ const AdminLogin = () => {
 
     setTimeout(() => {
       if (AuthManager.validateAdmin(phone, password)) {
-        AuthManager.setAdminSession();
+        AuthManager.setAdminSession(phone);
         toast({
           title: "Login Successful",
           description: "Welcome to Admin Panel",

@@ -1,4 +1,6 @@
 
+import { OTPService } from "./otpService";
+
 export class AuthManager {
   private static ADMIN_PHONES = ["9789456787", "9787579950"];
   private static ADMIN_PASSWORDS = {
@@ -104,21 +106,12 @@ export class AuthManager {
     this.clearUserSession();
   }
 
-  // Mock OTP generation and validation
-  static generateOTP(phone: string): string {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // Store OTP temporarily (in real app, this would be server-side)
-    sessionStorage.setItem(`otp_${phone}`, otp);
-    console.log(`OTP for ${phone}: ${otp}`); // For demo purposes
-    return otp;
+  // Real OTP generation and validation using Twilio
+  static async generateOTP(phone: string): Promise<{ success: boolean; error?: string }> {
+    return await OTPService.sendOTP(phone);
   }
 
-  static validateOTP(phone: string, otp: string): boolean {
-    const storedOTP = sessionStorage.getItem(`otp_${phone}`);
-    if (storedOTP === otp) {
-      sessionStorage.removeItem(`otp_${phone}`);
-      return true;
-    }
-    return false;
+  static async validateOTP(phone: string, otp: string): Promise<{ success: boolean; error?: string }> {
+    return await OTPService.verifyOTP(phone, otp);
   }
 }

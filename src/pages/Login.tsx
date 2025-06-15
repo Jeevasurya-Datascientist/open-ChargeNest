@@ -22,7 +22,7 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOTP = () => {
+  const handleSendOTP = async () => {
     if (!phoneNumber || phoneNumber.length !== 10) {
       toast({
         title: "Invalid Phone Number",
@@ -51,19 +51,34 @@ const Login = () => {
 
     setIsLoading(true);
     
-    // Generate and send OTP
-    setTimeout(() => {
-      const generatedOTP = AuthManager.generateOTP(phoneNumber);
+    try {
+      const result = await AuthManager.generateOTP(phoneNumber);
       setIsLoading(false);
-      setStep(3);
+      
+      if (result.success) {
+        setStep(3);
+        toast({
+          title: "OTP Sent",
+          description: `OTP sent to +91 ${phoneNumber} via SMS`,
+        });
+      } else {
+        toast({
+          title: "Failed to Send OTP",
+          description: result.error || "Please try again",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
       toast({
-        title: "OTP Sent",
-        description: `OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
+        title: "Error",
+        description: "Failed to send OTP. Please try again.",
+        variant: "destructive"
       });
-    }, 2000);
+    }
   };
 
-  const handleAdminPasswordVerification = () => {
+  const handleAdminPasswordVerification = async () => {
     if (!password) {
       toast({
         title: "Password Required",
@@ -75,15 +90,33 @@ const Login = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (AuthManager.validateAdmin(phoneNumber, password)) {
-        const generatedOTP = AuthManager.generateOTP(phoneNumber);
-        setIsLoading(false);
-        setStep(3);
-        toast({
-          title: "Password Verified",
-          description: `OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
-        });
+        try {
+          const result = await AuthManager.generateOTP(phoneNumber);
+          setIsLoading(false);
+          
+          if (result.success) {
+            setStep(3);
+            toast({
+              title: "Password Verified",
+              description: `OTP sent to +91 ${phoneNumber} via SMS`,
+            });
+          } else {
+            toast({
+              title: "Failed to Send OTP",
+              description: result.error || "Please try again",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          setIsLoading(false);
+          toast({
+            title: "Error",
+            description: "Failed to send OTP. Please try again.",
+            variant: "destructive"
+          });
+        }
       } else {
         setIsLoading(false);
         toast({
@@ -95,7 +128,7 @@ const Login = () => {
     }, 1000);
   };
 
-  const handleVerifyOTP = () => {
+  const handleVerifyOTP = async () => {
     if (!otp || otp.length !== 6) {
       toast({
         title: "Invalid OTP",
@@ -107,9 +140,11 @@ const Login = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const result = await AuthManager.validateOTP(phoneNumber, otp);
       setIsLoading(false);
-      if (AuthManager.validateOTP(phoneNumber, otp)) {
+      
+      if (result.success) {
         if (isAdminLogin) {
           AuthManager.setAdminSession(phoneNumber);
           toast({
@@ -128,11 +163,18 @@ const Login = () => {
       } else {
         toast({
           title: "Invalid OTP",
-          description: "Please check the OTP and try again",
+          description: result.error || "Please check the OTP and try again",
           variant: "destructive"
         });
       }
-    }, 2000);
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to verify OTP. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const goBack = () => {
@@ -144,6 +186,34 @@ const Login = () => {
       setPassword("");
     }
     setOtp("");
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    try {
+      const result = await AuthManager.generateOTP(phoneNumber);
+      setIsLoading(false);
+      
+      if (result.success) {
+        toast({
+          title: "OTP Resent",
+          description: `New OTP sent to +91 ${phoneNumber} via SMS`,
+        });
+      } else {
+        toast({
+          title: "Failed to Resend OTP",
+          description: result.error || "Please try again",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to resend OTP. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -317,16 +387,11 @@ const Login = () => {
 
             <div className="text-center">
               <button
-                onClick={() => {
-                  const generatedOTP = AuthManager.generateOTP(phoneNumber);
-                  toast({
-                    title: "OTP Resent",
-                    description: `New OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
-                  });
-                }}
-                className="text-sm text-green-primary hover:underline"
+                onClick={handleResendOTP}
+                disabled={isLoading}
+                className="text-sm text-green-primary hover:underline disabled:opacity-50"
               >
-                Resend OTP
+                {isLoading ? "Sending..." : "Resend OTP"}
               </button>
             </div>
           </div>

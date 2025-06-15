@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ArrowLeft, UserPlus } from "lucide-react";
+import { AuthManager } from "@/utils/authManager";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ const Register = () => {
     }));
   };
 
-  const handleSendOTP = () => {
+  const handleSendOTP = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "Missing Name",
@@ -69,18 +70,34 @@ const Register = () => {
 
     setIsLoading(true);
     
-    // Simulate OTP sending
-    setTimeout(() => {
+    try {
+      const result = await AuthManager.generateOTP(formData.phoneNumber);
       setIsLoading(false);
-      setStep(2);
+      
+      if (result.success) {
+        setStep(2);
+        toast({
+          title: "OTP Sent",
+          description: `OTP sent to +91 ${formData.phoneNumber} via SMS`,
+        });
+      } else {
+        toast({
+          title: "Failed to Send OTP",
+          description: result.error || "Please try again",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
       toast({
-        title: "OTP Sent",
-        description: `OTP sent to +91 ${formData.phoneNumber}`,
+        title: "Error",
+        description: "Failed to send OTP. Please try again.",
+        variant: "destructive"
       });
-    }, 2000);
+    }
   };
 
-  const handleVerifyOTP = () => {
+  const handleVerifyOTP = async () => {
     if (!otp || otp.length !== 6) {
       toast({
         title: "Invalid OTP",
@@ -92,10 +109,12 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
+    try {
+      const result = await AuthManager.validateOTP(formData.phoneNumber, otp);
       setIsLoading(false);
-      if (otp === "123456") { // Mock OTP
+      
+      if (result.success) {
+        AuthManager.setUserSession(formData.phoneNumber);
         toast({
           title: "Registration Successful",
           description: "Welcome to GreenCharge!",
@@ -104,16 +123,51 @@ const Register = () => {
       } else {
         toast({
           title: "Invalid OTP",
-          description: "Please check the OTP and try again",
+          description: result.error || "Please check the OTP and try again",
           variant: "destructive"
         });
       }
-    }, 2000);
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to verify OTP. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const goBack = () => {
     setStep(1);
     setOtp("");
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    try {
+      const result = await AuthManager.generateOTP(formData.phoneNumber);
+      setIsLoading(false);
+      
+      if (result.success) {
+        toast({
+          title: "OTP Resent",
+          description: `New OTP sent to +91 ${formData.phoneNumber} via SMS`,
+        });
+      } else {
+        toast({
+          title: "Failed to Resend OTP",
+          description: result.error || "Please try again",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to resend OTP. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -265,10 +319,11 @@ const Register = () => {
 
             <div className="text-center">
               <button
-                onClick={handleSendOTP}
-                className="text-sm text-green-primary hover:underline"
+                onClick={handleResendOTP}
+                disabled={isLoading}
+                className="text-sm text-green-primary hover:underline disabled:opacity-50"
               >
-                Resend OTP
+                {isLoading ? "Sending..." : "Resend OTP"}
               </button>
             </div>
           </div>
