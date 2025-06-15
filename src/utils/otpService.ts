@@ -2,15 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export class OTPService {
-  private static TESTING_NUMBER = "6382791350";
-
   static async sendOTP(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
-    // Skip OTP for testing number
-    if (phoneNumber === this.TESTING_NUMBER) {
-      console.log(`Skipping OTP for testing number: ${phoneNumber}`);
-      return { success: true };
-    }
-
     try {
       const { data, error } = await supabase.functions.invoke('send-otp', {
         body: { phoneNumber }
@@ -33,12 +25,6 @@ export class OTPService {
   }
 
   static async verifyOTP(phoneNumber: string, otp: string): Promise<{ success: boolean; error?: string }> {
-    // Skip OTP verification for testing number
-    if (phoneNumber === this.TESTING_NUMBER) {
-      console.log(`Skipping OTP verification for testing number: ${phoneNumber}`);
-      return { success: true };
-    }
-
     try {
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: { phoneNumber, otp }
