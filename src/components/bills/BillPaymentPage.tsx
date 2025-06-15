@@ -25,7 +25,7 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
   const getProviders = () => {
     switch (billType) {
       case "DTH":
-        return ["Tata Sky", "Dish TV", "Airtel Digital TV", "Sun Direct", "D2H"];
+        return ["Sun Direct", "Airtel Digital TV", "Tata Play (Sky)", "Dish TV", "Videocon D2H", "Big TV"];
       case "Electricity":
         return ["MSEB", "BESCOM", "TNEB", "PSEB", "UPPCL"];
       case "Gas":
@@ -39,11 +39,83 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
     }
   };
 
+  const validateDTHId = (provider: string, billNumber: string): { isValid: boolean; message?: string } => {
+    if (billType !== "DTH") return { isValid: true };
+
+    const cleanNumber = billNumber.replace(/\s/g, '');
+    
+    switch (provider) {
+      case "Sun Direct":
+        if (cleanNumber.length !== 11) {
+          return { isValid: false, message: "Sun Direct requires 11 digits" };
+        }
+        break;
+      case "Airtel Digital TV":
+        if (cleanNumber.length !== 10 || !cleanNumber.startsWith('3')) {
+          return { isValid: false, message: "Airtel Digital TV requires 10 digits starting with 3" };
+        }
+        break;
+      case "Tata Play (Sky)":
+        if (cleanNumber.length !== 10) {
+          return { isValid: false, message: "Tata Play requires 10 digits" };
+        }
+        break;
+      case "Dish TV":
+        if (cleanNumber.length !== 11 || !cleanNumber.startsWith('0')) {
+          return { isValid: false, message: "Dish TV requires 11 digits starting with 0" };
+        }
+        break;
+      case "Videocon D2H":
+        if (cleanNumber.length !== 10) {
+          return { isValid: false, message: "Videocon D2H requires 10-digit Customer ID" };
+        }
+        break;
+      case "Big TV":
+        if (cleanNumber.length !== 12) {
+          return { isValid: false, message: "Big TV requires 12-digit Smart Card number" };
+        }
+        break;
+    }
+    return { isValid: true };
+  };
+
+  const getPlaceholderText = () => {
+    if (billType !== "DTH" || !provider) return "Enter bill number";
+    
+    switch (provider) {
+      case "Sun Direct":
+        return "Enter 11-digit ID";
+      case "Airtel Digital TV":
+        return "Enter 10-digit ID (starts with 3)";
+      case "Tata Play (Sky)":
+        return "Enter 10-digit ID";
+      case "Dish TV":
+        return "Enter 11-digit ID (starts with 0)";
+      case "Videocon D2H":
+        return "Enter 10-digit Customer ID";
+      case "Big TV":
+        return "Enter 12-digit Smart Card number";
+      default:
+        return "Enter bill number";
+    }
+  };
+
   const handlePayment = () => {
     if (!billNumber || !amount || !provider) {
       toast({
         title: "Missing Information",
         description: "Please fill all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate DTH ID format
+    const validation = validateDTHId(provider, billNumber);
+    if (!validation.isValid) {
+      toast({
+        title: "Invalid ID Format",
+        description: validation.message,
         variant: "destructive"
       });
       return;
@@ -148,7 +220,7 @@ const BillPaymentPage = ({ onBack, onSuccess, billType }: BillPaymentPageProps) 
           <Label htmlFor="bill-number">Bill/Account Number</Label>
           <Input
             id="bill-number"
-            placeholder="Enter bill number"
+            placeholder={getPlaceholderText()}
             value={billNumber}
             onChange={(e) => setBillNumber(e.target.value)}
             className="mt-2 h-12 text-lg"
