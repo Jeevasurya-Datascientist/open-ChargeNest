@@ -216,7 +216,7 @@ const Profile = () => {
             <section>
               <h4 className="font-semibold mb-2">Contact Us</h4>
               <p>For privacy concerns, contact us at privacy@greencharge.com or call +91 1800-XXX-XXXX.</p>
-            </div>
+            </section>
           </div>
         </DialogContent>
       </Dialog>
