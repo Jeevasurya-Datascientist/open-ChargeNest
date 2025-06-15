@@ -176,7 +176,7 @@ const Register = () => {
               <Checkbox
                 id="terms"
                 checked={acceptedTerms}
-                onCheckedChange={setAcceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
                 className="mt-1"
               />
               <div className="text-sm leading-5">
