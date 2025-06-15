@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface WalletBalanceProps {
-  balance: number;
+  balance?: number;
   currency?: string;
   onAddMoney?: () => void;
+  onTransfer?: () => void;
 }
 
-const WalletBalance = ({ balance, currency = "₹", onAddMoney }: WalletBalanceProps) => {
+const WalletBalance = ({ balance = 0, currency = "₹", onAddMoney, onTransfer }: WalletBalanceProps) => {
   const [showBalance, setShowBalance] = useState(true);
 
   return (
@@ -50,6 +51,7 @@ const WalletBalance = ({ balance, currency = "₹", onAddMoney }: WalletBalanceP
           variant="secondary" 
           size="sm" 
           className="flex-1 bg-white/20 hover:bg-white/30 text-white border-white/30"
+          onClick={onTransfer}
         >
           Transfer
         </Button>

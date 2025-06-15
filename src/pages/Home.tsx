@@ -54,6 +54,7 @@ const Home = () => {
       
       <div className="space-y-6">
         <WalletBalance 
+          balance={2450}
           onAddMoney={() => setShowAddMoney(true)}
           onTransfer={() => setShowTransfer(true)}
         />
@@ -93,6 +94,10 @@ const Home = () => {
       <AddMoneyDialog
         isOpen={showAddMoney}
         onClose={() => setShowAddMoney(false)}
+        onSuccess={(amount) => {
+          // Handle successful money addition
+          console.log('Money added:', amount);
+        }}
       />
 
       <TransferDialog
