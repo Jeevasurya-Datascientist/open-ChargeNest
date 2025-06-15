@@ -8,13 +8,16 @@ export class OTPService {
     // Clean phone number (remove any spaces, dashes, or country codes)
     const cleanedNumber = phoneNumber.replace(/[\s\-\+]/g, '').replace(/^91/, '');
     
-    console.log(`Checking OTP bypass for number: ${phoneNumber}, cleaned: ${cleanedNumber}`);
+    console.log(`Checking OTP bypass for number: ${phoneNumber}, cleaned: ${cleanedNumber}, testing number: ${this.TESTING_NUMBER}`);
+    console.log(`Comparison result: ${cleanedNumber === this.TESTING_NUMBER}`);
     
     // Skip OTP for testing number
     if (cleanedNumber === this.TESTING_NUMBER) {
-      console.log(`Bypassing OTP send for testing number: ${phoneNumber}`);
+      console.log(`✅ Bypassing OTP send for testing number: ${phoneNumber}`);
       return { success: true };
     }
+
+    console.log(`📱 Sending real OTP for number: ${phoneNumber}`);
 
     try {
       const { data, error } = await supabase.functions.invoke('send-otp', {
@@ -41,13 +44,22 @@ export class OTPService {
     // Clean phone number (remove any spaces, dashes, or country codes)
     const cleanedNumber = phoneNumber.replace(/[\s\-\+]/g, '').replace(/^91/, '');
     
-    console.log(`Checking OTP verification bypass for number: ${phoneNumber}, cleaned: ${cleanedNumber}`);
+    console.log(`Checking OTP verification bypass for number: ${phoneNumber}, cleaned: ${cleanedNumber}, testing number: ${this.TESTING_NUMBER}`);
+    console.log(`Comparison result: ${cleanedNumber === this.TESTING_NUMBER}`);
+    console.log(`Entered OTP: ${otp}`);
     
-    // Skip OTP verification for testing number
+    // Skip OTP verification for testing number - accept any 6-digit code
     if (cleanedNumber === this.TESTING_NUMBER) {
-      console.log(`Bypassing OTP verification for testing number: ${phoneNumber}`);
-      return { success: true };
+      console.log(`✅ Bypassing OTP verification for testing number: ${phoneNumber}`);
+      // Still validate that a 6-digit code was entered for consistency
+      if (otp && otp.length === 6) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Please enter a 6-digit code' };
+      }
     }
+
+    console.log(`🔐 Verifying real OTP for number: ${phoneNumber}`);
 
     try {
       const { data, error } = await supabase.functions.invoke('verify-otp', {
