@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,30 +93,29 @@ const Profile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 dark:from-background dark:to-card">
       <Header />
       
       <div className="p-4 pb-20 max-w-4xl mx-auto">
         {/* Profile Header */}
-        <Card className="p-6 mb-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+        <Card className="p-6 mb-6 bg-white/80 dark:bg-card/80 backdrop-blur-sm shadow-lg border-0">
           <div className="flex items-center space-x-4 mb-6">
-            <Avatar className="h-20 w-20 ring-4 ring-green-200">
-              <AvatarImage src="/placeholder.svg" />
+            <Avatar className="h-20 w-20 ring-4 ring-green-200 dark:ring-green-accent">
               <AvatarFallback className="bg-green-gradient text-white text-lg font-semibold">
                 {userData.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{userData.name}</h1>
-              <p className="text-gray-600">{userData.email}</p>
-              <p className="text-sm text-gray-500">Member since {userData.joinDate}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-foreground">{userData.name}</h1>
+              <p className="text-gray-600 dark:text-muted-foreground">{userData.email}</p>
+              <p className="text-sm text-gray-500 dark:text-muted-foreground">Member since {userData.joinDate}</p>
             </div>
             {!isEditing && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditing(true)}
-                className="border-green-200 text-green-700 hover:bg-green-50"
+                className="border-green-200 dark:border-green-accent text-green-700 dark:text-green-primary hover:bg-green-50 dark:hover:bg-green-accent/20"
               >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit
@@ -127,7 +125,7 @@ const Profile = () => {
 
           {/* Edit Form */}
           {isEditing && (
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-4 border-t dark:border-border pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Full Name</Label>
@@ -160,7 +158,7 @@ const Profile = () => {
                 <Button
                   variant="outline"
                   onClick={handleCancel}
-                  className="border-gray-300"
+                  className="border-gray-300 dark:border-border"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -175,16 +173,16 @@ const Profile = () => {
           {menuItems.map((item) => (
             <Card
               key={item.id}
-              className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 bg-white/80 backdrop-blur-sm border-0 hover:bg-white/90"
+              className="p-4 cursor-pointer hover:shadow-md transition-all duration-200 bg-white/80 dark:bg-card/80 backdrop-blur-sm border-0 hover:bg-white/90 dark:hover:bg-card/90"
               onClick={item.action}
             >
               <div className="flex items-center space-x-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <item.icon className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-green-accent rounded-lg">
+                  <item.icon className="h-5 w-5 text-green-600 dark:text-green-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{item.label}</h3>
-                  <p className="text-sm text-gray-600">{item.description}</p>
+                  <h3 className="font-medium text-gray-900 dark:text-foreground">{item.label}</h3>
+                  <p className="text-sm text-gray-600 dark:text-muted-foreground">{item.description}</p>
                   {item.id === 'linked-numbers' && (
                     <div className="mt-2">
                       {linkedNumbers.length > 0 ? (
@@ -192,19 +190,19 @@ const Profile = () => {
                           {linkedNumbers.map((number, index) => (
                             <span
                               key={index}
-                              className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded text-xs"
+                              className="inline-block bg-green-100 dark:bg-green-accent text-green-700 dark:text-green-primary px-2 py-1 rounded text-xs"
                             >
                               {number}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500">No linked numbers found</p>
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground">No linked numbers found</p>
                       )}
                     </div>
                   )}
                 </div>
-                <div className="text-gray-400">
+                <div className="text-gray-400 dark:text-muted-foreground">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>

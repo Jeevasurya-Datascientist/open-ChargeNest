@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Moon, Sun, Shield } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Shield, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -113,6 +113,19 @@ const Settings = () => {
     });
   };
 
+  const handleLogout = () => {
+    // Clear only authentication-related data, preserve user data
+    localStorage.removeItem('userSession');
+    localStorage.removeItem('authToken');
+    
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out successfully. Your data has been preserved.",
+    });
+    
+    navigate('/login');
+  };
+
   const settingsOptions = [
     {
       icon: settings.darkMode ? Moon : Sun,
@@ -125,7 +138,7 @@ const Settings = () => {
     {
       icon: Shield,
       title: "Biometric Authentication",
-      subtitle: "Use device biometric authentication",
+      subtitle: "Use device biometric authentication (optional)",
       key: "biometricAuth",
       value: settings.biometricAuth,
       handler: handleBiometricAuth
@@ -153,7 +166,7 @@ const Settings = () => {
             <Card key={index} className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-green-light rounded-lg">
+                  <div className="p-2 bg-green-light dark:bg-green-accent rounded-lg">
                     <option.icon size={20} className="text-green-primary" />
                   </div>
                   <div>
@@ -173,12 +186,26 @@ const Settings = () => {
           ))}
 
           <div className="mt-8 space-y-3">
-            <h3 className="text-lg font-semibold">Reset Options</h3>
+            <h3 className="text-lg font-semibold">Account Actions</h3>
             
             <Card className="p-4">
               <Button 
                 variant="outline" 
-                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                className="w-full text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/20"
+                onClick={handleLogout}
+              >
+                <LogOut size={16} className="mr-2" />
+                Log Out
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Your data will be preserved and available when you log back in.
+              </p>
+            </Card>
+
+            <Card className="p-4">
+              <Button 
+                variant="outline" 
+                className="w-full text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20"
                 onClick={resetAllSettings}
               >
                 Reset All Settings

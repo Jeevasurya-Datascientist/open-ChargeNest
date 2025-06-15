@@ -1,5 +1,5 @@
 
-import { Bell, User } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
@@ -10,11 +10,11 @@ interface HeaderProps {
 
 const Header = ({ 
   title = "GreenCharge", 
-  showProfile = true, 
+  showProfile = false, 
   showNotifications = true 
 }: HeaderProps) => {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <header className="bg-white dark:bg-card border-b border-gray-200 dark:border-border sticky top-0 z-40">
       <div className="flex items-center justify-between p-4 max-w-md mx-auto">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-br from-green-primary to-green-secondary rounded-lg flex items-center justify-center">
@@ -27,11 +27,6 @@ const Header = ({
           {showNotifications && (
             <Button variant="ghost" size="sm" className="p-2">
               <Bell size={20} className="text-green-primary" />
-            </Button>
-          )}
-          {showProfile && (
-            <Button variant="ghost" size="sm" className="p-2">
-              <User size={20} className="text-green-primary" />
             </Button>
           )}
         </div>
