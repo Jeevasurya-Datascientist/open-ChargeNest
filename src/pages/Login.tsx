@@ -8,14 +8,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ArrowLeft, Smartphone } from "lucide-react";
+import { ArrowLeft, Smartphone, Shield } from "lucide-react";
+import { AuthManager } from "@/utils/authManager";
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState(1); // 1: Phone, 2: OTP
+  const [step, setStep] = useState(1); // 1: Phone, 2: Password (for admin), 3: OTP
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -38,17 +41,58 @@ const Login = () => {
       return;
     }
 
+    const isAdmin = AuthManager.isAdminPhone(phoneNumber);
+    
+    if (isAdmin) {
+      setIsAdminLogin(true);
+      setStep(2); // Go to password step for admin
+      return;
+    }
+
     setIsLoading(true);
     
-    // Simulate OTP sending
+    // Generate and send OTP
     setTimeout(() => {
+      const generatedOTP = AuthManager.generateOTP(phoneNumber);
       setIsLoading(false);
-      setStep(2);
+      setStep(3);
       toast({
         title: "OTP Sent",
-        description: `OTP sent to +91 ${phoneNumber}`,
+        description: `OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
       });
     }, 2000);
+  };
+
+  const handleAdminPasswordVerification = () => {
+    if (!password) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your admin password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      if (AuthManager.validateAdmin(phoneNumber, password)) {
+        const generatedOTP = AuthManager.generateOTP(phoneNumber);
+        setIsLoading(false);
+        setStep(3);
+        toast({
+          title: "Password Verified",
+          description: `OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
+        });
+      } else {
+        setIsLoading(false);
+        toast({
+          title: "Invalid Password",
+          description: "Please check your admin password and try again",
+          variant: "destructive"
+        });
+      }
+    }, 1000);
   };
 
   const handleVerifyOTP = () => {
@@ -63,15 +107,24 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // Simulate OTP verification
     setTimeout(() => {
       setIsLoading(false);
-      if (otp === "123456") { // Mock OTP
-        toast({
-          title: "Login Successful",
-          description: "Welcome to GreenCharge!",
-        });
-        navigate("/");
+      if (AuthManager.validateOTP(phoneNumber, otp)) {
+        if (isAdminLogin) {
+          AuthManager.setAdminSession(phoneNumber);
+          toast({
+            title: "Admin Login Successful",
+            description: "Welcome to Admin Panel!",
+          });
+          navigate("/admin");
+        } else {
+          AuthManager.setUserSession(phoneNumber);
+          toast({
+            title: "Login Successful",
+            description: "Welcome to GreenCharge!",
+          });
+          navigate("/");
+        }
       } else {
         toast({
           title: "Invalid OTP",
@@ -83,7 +136,13 @@ const Login = () => {
   };
 
   const goBack = () => {
-    setStep(1);
+    if (step === 3) {
+      setStep(isAdminLogin ? 2 : 1);
+    } else if (step === 2) {
+      setStep(1);
+      setIsAdminLogin(false);
+      setPassword("");
+    }
     setOtp("");
   };
 
@@ -92,11 +151,19 @@ const Login = () => {
       <Card className="w-full max-w-md p-6 space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-green-gradient rounded-full flex items-center justify-center">
-            <Smartphone className="h-8 w-8 text-white" />
+            {isAdminLogin ? (
+              <Shield className="h-8 w-8 text-white" />
+            ) : (
+              <Smartphone className="h-8 w-8 text-white" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-green-primary">GreenCharge</h1>
+          <h1 className="text-2xl font-bold text-green-primary">
+            {isAdminLogin ? "Admin Login" : "GreenCharge"}
+          </h1>
           <p className="text-muted-foreground">
-            {step === 1 ? "Enter your phone number to continue" : "Enter the OTP sent to your phone"}
+            {step === 1 ? "Enter your phone number to continue" : 
+             step === 2 ? "Enter your admin password" :
+             "Enter the OTP sent to your phone"}
           </p>
         </div>
 
@@ -154,7 +221,7 @@ const Login = () => {
               className="w-full green-gradient text-white"
               disabled={isLoading || phoneNumber.length !== 10 || !acceptedTerms}
             >
-              {isLoading ? "Sending OTP..." : "Send OTP"}
+              {isLoading ? "Processing..." : "Continue"}
             </Button>
 
             <div className="text-center">
@@ -168,7 +235,7 @@ const Login = () => {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && isAdminLogin && (
           <div className="space-y-4">
             <Button
               variant="ghost"
@@ -177,6 +244,43 @@ const Login = () => {
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Change Number
+            </Button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              Admin phone: +91 {phoneNumber}
+            </div>
+
+            <div>
+              <Label htmlFor="password">Admin Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter admin password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <Button
+              onClick={handleAdminPasswordVerification}
+              className="w-full green-gradient text-white"
+              disabled={isLoading || !password}
+            >
+              {isLoading ? "Verifying..." : "Verify Password"}
+            </Button>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              onClick={goBack}
+              className="p-0 h-auto text-green-primary"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {isAdminLogin ? "Back to Password" : "Change Number"}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
@@ -213,7 +317,13 @@ const Login = () => {
 
             <div className="text-center">
               <button
-                onClick={handleSendOTP}
+                onClick={() => {
+                  const generatedOTP = AuthManager.generateOTP(phoneNumber);
+                  toast({
+                    title: "OTP Resent",
+                    description: `New OTP sent to +91 ${phoneNumber}. Check console for demo OTP.`,
+                  });
+                }}
                 className="text-sm text-green-primary hover:underline"
               >
                 Resend OTP
