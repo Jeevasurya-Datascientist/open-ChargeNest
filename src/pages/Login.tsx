@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,7 +155,7 @@ const Login = () => {
           AuthManager.setUserSession(phoneNumber);
           toast({
             title: "Login Successful",
-            description: "Welcome to GreenCharge!",
+            description: "Welcome to AnyPay Hub!",
           });
           navigate("/");
         }
@@ -228,7 +227,7 @@ const Login = () => {
             )}
           </div>
           <h1 className="text-2xl font-bold text-green-primary">
-            {isAdminLogin ? "Admin Login" : "GreenCharge"}
+            {isAdminLogin ? "Admin Login" : "AnyPay Hub"}
           </h1>
           <p className="text-muted-foreground">
             {step === 1 ? "Enter your phone number to continue" : 

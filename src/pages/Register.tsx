@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,7 @@ const Register = () => {
     email: ""
   });
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState(1); // 1: Details, 2: OTP
+  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
@@ -117,7 +116,7 @@ const Register = () => {
         AuthManager.setUserSession(formData.phoneNumber);
         toast({
           title: "Registration Successful",
-          description: "Welcome to GreenCharge!",
+          description: "Welcome to AnyPay Hub!",
         });
         navigate("/");
       } else {
@@ -177,7 +176,7 @@ const Register = () => {
           <div className="mx-auto w-16 h-16 bg-green-gradient rounded-full flex items-center justify-center">
             <UserPlus className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-green-primary">Join GreenCharge</h1>
+          <h1 className="text-2xl font-bold text-green-primary">Join AnyPay Hub</h1>
           <p className="text-muted-foreground">
             {step === 1 ? "Create your account to get started" : "Enter the OTP sent to your phone"}
           </p>

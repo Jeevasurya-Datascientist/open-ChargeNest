@@ -85,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
     const formData = new URLSearchParams();
     formData.append('From', twilioPhoneNumber);
     formData.append('To', `+91${cleanedNumber}`);
-    formData.append('Body', `Your GreenCharge verification code is: ${otp}. This code will expire in 5 minutes.`);
+    formData.append('Body', `Your AnyPay Hub verification code is: ${otp}. This code will expire in 5 minutes.`);
     
     try {
       const twilioResponse = await fetch(twilioUrl, {

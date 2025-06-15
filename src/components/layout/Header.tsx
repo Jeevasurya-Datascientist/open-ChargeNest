@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 const Header = ({ 
-  title = "GreenCharge", 
+  title = "AnyPay Hub", 
   showProfile = false, 
   showNotifications = true 
 }: HeaderProps) => {
@@ -18,7 +18,7 @@ const Header = ({
       <div className="flex items-center justify-between p-4 max-w-md mx-auto">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-br from-green-primary to-green-secondary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">G</span>
+            <span className="text-white font-bold text-sm">A</span>
           </div>
           <h1 className="text-xl font-bold text-green-primary">{title}</h1>
         </div>
