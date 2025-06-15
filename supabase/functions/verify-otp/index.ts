@@ -19,7 +19,10 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phoneNumber, otp }: VerifyOTPRequest = await req.json();
     
+    console.log(`🔐 Verifying OTP for number: ${phoneNumber}, OTP: ${otp}`);
+    
     if (!phoneNumber || !otp) {
+      console.log('❌ Missing phone number or OTP');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -34,16 +37,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Clean phone number
     const cleanedNumber = phoneNumber.replace(/[\s\-\+]/g, '').replace(/^91/, '');
+    console.log(`📱 Cleaned number: ${cleanedNumber}`);
     
     // Initialize global store if it doesn't exist
     if (!globalThis.otpStore) {
+      console.log('🔄 Initializing OTP store');
       globalThis.otpStore = new Map();
     }
+    
+    // Debug: Log all stored OTPs
+    console.log('📋 Current OTP store contents:', Array.from(globalThis.otpStore.entries()));
     
     // Get OTP from memory store
     const storedOtpData = globalThis.otpStore.get(cleanedNumber);
     
     if (!storedOtpData) {
+      console.log(`❌ No OTP found for ${cleanedNumber}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -56,8 +65,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
+    console.log(`🔍 Found stored OTP data for ${cleanedNumber}:`, storedOtpData);
+    
     // Check if OTP is expired
     if (Date.now() > storedOtpData.expiresAt) {
+      console.log(`⏰ OTP expired for ${cleanedNumber}`);
       globalThis.otpStore.delete(cleanedNumber);
       return new Response(
         JSON.stringify({ 
@@ -71,8 +83,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Verify OTP
-    if (storedOtpData.otp === otp) {
+    // Verify OTP (convert both to strings for comparison)
+    const storedOtp = String(storedOtpData.otp);
+    const providedOtp = String(otp);
+    
+    console.log(`🔐 Comparing OTPs - Stored: ${storedOtp}, Provided: ${providedOtp}`);
+    
+    if (storedOtp === providedOtp) {
       // Remove OTP after successful verification
       globalThis.otpStore.delete(cleanedNumber);
       
@@ -89,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     } else {
-      console.log(`❌ Invalid OTP for ${cleanedNumber}. Expected: ${storedOtpData.otp}, Got: ${otp}`);
+      console.log(`❌ Invalid OTP for ${cleanedNumber}. Expected: ${storedOtp}, Got: ${providedOtp}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -102,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    console.error('❌ Error verifying OTP:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 

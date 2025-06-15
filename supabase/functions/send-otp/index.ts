@@ -18,6 +18,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phoneNumber }: SendOTPRequest = await req.json();
     
+    console.log(`📱 Sending OTP request for: ${phoneNumber}`);
+    
     if (!phoneNumber) {
       return new Response(
         JSON.stringify({ 
@@ -33,6 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Clean phone number
     const cleanedNumber = phoneNumber.replace(/[\s\-\+]/g, '').replace(/^91/, '');
+    console.log(`📱 Cleaned number: ${cleanedNumber}`);
     
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
@@ -50,12 +53,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Initialize global store if it doesn't exist
     if (!globalThis.otpStore) {
+      console.log('🔄 Initializing OTP store');
       globalThis.otpStore = new Map();
     }
     
     globalThis.otpStore.set(cleanedNumber, otpData);
     
-    console.log(`Generated OTP for ${cleanedNumber}: ${otp}`);
+    console.log(`✅ Generated and stored OTP for ${cleanedNumber}: ${otp}`);
+    console.log('📋 Current OTP store after setting:', Array.from(globalThis.otpStore.entries()));
     
     // If Twilio credentials are not configured, simulate success for testing
     if (!accountSid || !authToken || !twilioPhoneNumber) {
@@ -82,21 +87,53 @@ const handler = async (req: Request): Promise<Response> => {
     formData.append('To', `+91${cleanedNumber}`);
     formData.append('Body', `Your GreenCharge verification code is: ${otp}. This code will expire in 5 minutes.`);
     
-    const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${twilioAuth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData,
-    });
-    
-    if (!twilioResponse.ok) {
-      const error = await twilioResponse.text();
-      console.error('Twilio error:', error);
+    try {
+      const twilioResponse = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${twilioAuth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
       
-      // Still return success for testing purposes, but log the error
-      console.log(`⚠️ Twilio failed, but continuing for testing: ${error}`);
+      if (!twilioResponse.ok) {
+        const errorText = await twilioResponse.text();
+        console.error('❌ Twilio error:', errorText);
+        
+        // Still return success for testing purposes, but log the error
+        console.log(`⚠️ Twilio failed, but continuing for testing: ${errorText}`);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'OTP sent successfully (fallback)',
+            testing: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
+      const result = await twilioResponse.json();
+      console.log('✅ SMS sent successfully via Twilio:', result.sid);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'OTP sent successfully',
+          sid: result.sid 
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    } catch (twilioError) {
+      console.error('❌ Twilio request failed:', twilioError);
+      
+      // Return success for testing even if Twilio fails
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -109,23 +146,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
-    
-    const result = await twilioResponse.json();
-    console.log('SMS sent successfully:', result.sid);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'OTP sent successfully',
-        sid: result.sid 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
   } catch (error) {
-    console.error('Error sending OTP:', error);
+    console.error('❌ Error sending OTP:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -133,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
