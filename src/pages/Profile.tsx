@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
@@ -99,12 +99,7 @@ const Profile = () => {
       <div className="p-4 pb-20 max-w-4xl mx-auto">
         {/* Profile Header */}
         <Card className="p-6 mb-6 bg-white/80 dark:bg-card/80 backdrop-blur-sm shadow-lg border-0">
-          <div className="flex items-center space-x-4 mb-6">
-            <Avatar className="h-20 w-20 ring-4 ring-green-200 dark:ring-green-accent">
-              <AvatarFallback className="bg-green-gradient text-white text-lg font-semibold">
-                {userData.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
+          <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-foreground">{userData.name}</h1>
               <p className="text-gray-600 dark:text-muted-foreground">{userData.email}</p>
