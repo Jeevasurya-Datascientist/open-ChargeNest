@@ -1,4 +1,3 @@
-
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { Card } from "@/components/ui/card";
@@ -117,23 +116,6 @@ const Profile = () => {
             </Card>
           ))}
         </div>
-
-        {/* Admin Access */}
-        <Card className="p-4 mb-6 bg-orange-50 border-orange-200">
-          <div className="text-center">
-            <h3 className="font-semibold text-orange-800 mb-2">Admin Access</h3>
-            <p className="text-xs text-orange-600 mb-3">
-              Access admin panel at: <strong>/admin</strong>
-            </p>
-            <Button 
-              onClick={() => window.location.href = '/admin'}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-              size="sm"
-            >
-              Go to Admin Panel
-            </Button>
-          </div>
-        </Card>
 
         {/* Logout Button */}
         <div className="mt-8">

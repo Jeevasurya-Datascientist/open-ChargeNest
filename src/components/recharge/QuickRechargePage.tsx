@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,18 +7,51 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, ArrowLeft, CreditCard } from "lucide-react";
 import { detectOperator, operators } from "@/utils/operatorDetection";
 import { WalletManager } from "@/utils/walletManager";
+import { RechargeManager } from "@/utils/rechargeManager";
 
 interface QuickRechargePageProps {
   onBack: () => void;
   onSuccess: (rechargeData: any) => void;
+  prefilledData?: any;
 }
 
-const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
+const QuickRechargePage = ({ onBack, onSuccess, prefilledData }: QuickRechargePageProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [operator, setOperator] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (prefilledData) {
+      setPhoneNumber(prefilledData.fullNumber || "");
+      setAmount(prefilledData.amount?.toString() || "");
+      if (prefilledData.fullNumber) {
+        const detectedOperator = detectOperator(prefilledData.fullNumber);
+        setOperator(detectedOperator);
+      }
+    }
+  }, [prefilledData]);
+
+  useEffect(() => {
+    if (phoneNumber.length === 10) {
+      const timeUntilNext = RechargeManager.getTimeUntilNextRecharge(phoneNumber);
+      setTimeRemaining(timeUntilNext);
+      
+      if (timeUntilNext > 0) {
+        const timer = setInterval(() => {
+          const remaining = RechargeManager.getTimeUntilNextRecharge(phoneNumber);
+          setTimeRemaining(remaining);
+          if (remaining <= 0) {
+            clearInterval(timer);
+          }
+        }, 1000);
+        
+        return () => clearInterval(timer);
+      }
+    }
+  }, [phoneNumber]);
 
   const handlePhoneChange = (value: string) => {
     const numericValue = value.replace(/\D/g, '').slice(0, 10);
@@ -60,35 +93,43 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
       return;
     }
 
+    if (!RechargeManager.canRepeatRecharge(phoneNumber)) {
+      const timeLeft = Math.ceil(timeRemaining / 1000 / 60);
+      toast({
+        title: "Recharge Limit",
+        description: `Please wait ${timeLeft} minute(s) before recharging this number again`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     const totalAmount = parseFloat(amount);
     const commission = totalAmount * 0.02;
     const currentBalance = WalletManager.getBalance();
 
     setIsProcessing(true);
 
-    // Check if wallet has sufficient balance
     if (currentBalance >= totalAmount) {
-      // Deduct from wallet
       const walletResult = WalletManager.deductMoney(totalAmount, `${operator} Recharge - ${phoneNumber.slice(-4)}`);
       
       if (walletResult.success) {
         processRecharge(totalAmount, commission, "Wallet");
       }
     } else {
-      // Initiate UPI transaction for the exact recharge amount
       toast({
         title: "Insufficient Wallet Balance",
         description: `Redirecting to UPI for ₹${totalAmount} payment...`,
       });
 
       setTimeout(() => {
-        // Simulate UPI payment
         processRecharge(totalAmount, commission, "UPI");
       }, 3000);
     }
   };
 
   const processRecharge = (totalAmount: number, commission: number, paymentMethod: string) => {
+    RechargeManager.recordRecharge(phoneNumber, operator, totalAmount);
+    
     const rechargeData = {
       id: `TXN${Date.now()}`,
       type: "Mobile Recharge",
@@ -118,6 +159,7 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
   const totalAmount = parseFloat(amount || "0");
   const commission = totalAmount * 0.02;
   const willUseUPI = currentBalance < totalAmount && totalAmount > 0;
+  const canRecharge = RechargeManager.canRepeatRecharge(phoneNumber);
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,6 +192,9 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
               src={operators[operator].logo} 
               alt={operator}
               className="w-10 h-10 rounded"
+              onError={(e) => {
+                e.currentTarget.src = "/logos/default.png";
+              }}
             />
             <div className="flex items-center space-x-2">
               <Check size={20} className="text-green-primary" />
@@ -157,6 +202,14 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
                 Detected Operator: {operator}
               </p>
             </div>
+          </div>
+        )}
+
+        {!canRecharge && timeRemaining > 0 && (
+          <div className="p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              Please wait {Math.ceil(timeRemaining / 1000 / 60)} minute(s) before recharging this number again
+            </p>
           </div>
         )}
 
@@ -197,7 +250,7 @@ const QuickRechargePage = ({ onBack, onSuccess }: QuickRechargePageProps) => {
         <Button
           onClick={handleRecharge}
           className="w-full green-gradient text-white h-12 text-lg"
-          disabled={!phoneNumber || phoneNumber.length !== 10 || !amount || operator === "Unknown" || !operator || isProcessing}
+          disabled={!phoneNumber || phoneNumber.length !== 10 || !amount || operator === "Unknown" || !operator || isProcessing || !canRecharge}
         >
           {isProcessing ? "Processing..." : willUseUPI ? "Pay via UPI" : "Recharge Now"}
         </Button>

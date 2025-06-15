@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, Phone, Search, Filter, MoreVertical, MessageSquare, Repeat, Share, Eye, EyeOff } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { RechargeManager } from "@/utils/rechargeManager";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,9 +20,6 @@ const History = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [showComplaintDialog, setShowComplaintDialog] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-  const [complaintMessage, setComplaintMessage] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
   const [showCommissionFor, setShowCommissionFor] = useState<string | null>(null);
   const { toast } = useToast();
@@ -66,10 +61,27 @@ Issue: Please help resolve this transaction issue.`;
   };
 
   const handleRepeat = (transaction: any) => {
-    toast({
-      title: "Repeat Transaction",
-      description: `Repeating ${transaction.type} for ${transaction.operator}`,
-    });
+    if (!RechargeManager.canRepeatRecharge(transaction.fullNumber)) {
+      const timeRemaining = RechargeManager.getTimeUntilNextRecharge(transaction.fullNumber);
+      const timeLeft = Math.ceil(timeRemaining / 1000 / 60);
+      toast({
+        title: "Recharge Limit",
+        description: `Please wait ${timeLeft} minute(s) before recharging this number again`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Navigate to recharge page with prefilled data
+    const rechargeData = {
+      fullNumber: transaction.fullNumber,
+      amount: transaction.amount,
+      operator: transaction.operator
+    };
+    
+    // Store data temporarily and navigate
+    sessionStorage.setItem('repeatRechargeData', JSON.stringify(rechargeData));
+    window.location.href = '/?repeat=true';
   };
 
   const generatePDFReceipt = (transaction: any) => {

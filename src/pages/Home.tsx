@@ -8,8 +8,8 @@ import RechargeServices from "@/components/home/RechargeServices";
 import OffersSection from "@/components/home/OffersSection";
 import QuickRechargePage from "@/components/recharge/QuickRechargePage";
 import MobileRechargeDialog from "@/components/recharge/MobileRechargeDialog";
-import BillPaymentDialog from "@/components/bills/BillPaymentDialog";
-import ElectricityBillDialog from "@/components/bills/ElectricityBillDialog";
+import BillPaymentPage from "@/components/bills/BillPaymentPage";
+import ElectricityBillPage from "@/components/bills/ElectricityBillPage";
 import AddMoneyPage from "@/components/wallet/AddMoneyPage";
 import TransferPage from "@/components/wallet/TransferPage";
 
@@ -21,6 +21,7 @@ const Home = () => {
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [billType, setBillType] = useState("");
+  const [rechargeData, setRechargeData] = useState<any>(null);
 
   const saveTransactionToHistory = (transactionData: any) => {
     const existingHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
@@ -48,14 +49,60 @@ const Home = () => {
     }
   };
 
+  const handleQuickRecharge = (data?: any) => {
+    if (data) {
+      setRechargeData(data);
+    }
+    setShowQuickRecharge(true);
+  };
+
+  const handleBillPayment = () => {
+    setBillType("General");
+    setShowBillPayment(true);
+  };
+
+  const handleRecentTransactions = () => {
+    window.location.href = "/history";
+  };
+
   // If any full page is shown, render that instead
   if (showQuickRecharge) {
     return (
       <QuickRechargePage
-        onBack={() => setShowQuickRecharge(false)}
+        onBack={() => {
+          setShowQuickRecharge(false);
+          setRechargeData(null);
+        }}
         onSuccess={(data) => {
           saveTransactionToHistory(data);
           setShowQuickRecharge(false);
+          setRechargeData(null);
+        }}
+        prefilledData={rechargeData}
+      />
+    );
+  }
+
+  if (showBillPayment) {
+    return (
+      <BillPaymentPage
+        onBack={() => setShowBillPayment(false)}
+        onSuccess={(data) => {
+          saveTransactionToHistory(data);
+          setShowBillPayment(false);
+        }}
+        billType={billType}
+      />
+    );
+  }
+
+  if (showElectricityBill) {
+    return (
+      <ElectricityBillPage
+        onBack={() => setShowElectricityBill(false)}
+        onSuccess={(data) => {
+          saveTransactionToHistory(data);
+          setShowElectricityBill(false);
         }}
       />
     );
@@ -91,8 +138,10 @@ const Home = () => {
           onTransfer={() => setShowTransfer(true)}
         />
         <QuickActions 
-          onQuickRecharge={() => setShowQuickRecharge(true)}
+          onQuickRecharge={() => handleQuickRecharge()}
           onAddMoney={() => setShowAddMoney(true)}
+          onBillPayment={handleBillPayment}
+          onRecentTransactions={handleRecentTransactions}
         />
         <RechargeServices onServiceClick={handleServiceClick} />
         <OffersSection />
@@ -101,19 +150,6 @@ const Home = () => {
       <MobileRechargeDialog
         isOpen={showMobileRecharge}
         onClose={() => setShowMobileRecharge(false)}
-        onSuccess={saveTransactionToHistory}
-      />
-
-      <BillPaymentDialog
-        isOpen={showBillPayment}
-        onClose={() => setShowBillPayment(false)}
-        onSuccess={saveTransactionToHistory}
-        billType={billType}
-      />
-
-      <ElectricityBillDialog
-        isOpen={showElectricityBill}
-        onClose={() => setShowElectricityBill(false)}
         onSuccess={saveTransactionToHistory}
       />
 

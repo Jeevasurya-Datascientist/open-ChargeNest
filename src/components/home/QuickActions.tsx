@@ -1,25 +1,30 @@
 
 import { Phone, Settings, Wallet, Clock } from "lucide-react";
 import ServiceCard from "@/components/ui/service-card";
+import { RechargeManager } from "@/utils/rechargeManager";
 
 interface QuickActionsProps {
   onQuickRecharge?: () => void;
   onAddMoney?: () => void;
+  onBillPayment?: () => void;
+  onRecentTransactions?: () => void;
 }
 
-const QuickActions = ({ onQuickRecharge, onAddMoney }: QuickActionsProps) => {
+const QuickActions = ({ onQuickRecharge, onAddMoney, onBillPayment, onRecentTransactions }: QuickActionsProps) => {
+  const lastRecharge = RechargeManager.getLastRecharge();
+  
   const quickActions = [
     { 
       icon: Phone, 
       title: "Quick Recharge", 
-      subtitle: "Last: Jio ****1234",
+      subtitle: lastRecharge ? `Last: ${lastRecharge.operator} ****${lastRecharge.phoneNumber.slice(-4)}` : "Recharge mobile",
       onClick: onQuickRecharge
     },
     { 
       icon: Settings, 
       title: "Bill Payment", 
       subtitle: "Electricity, Gas",
-      onClick: () => {}
+      onClick: onBillPayment
     },
     { 
       icon: Wallet, 
@@ -31,7 +36,7 @@ const QuickActions = ({ onQuickRecharge, onAddMoney }: QuickActionsProps) => {
       icon: Clock, 
       title: "Recent", 
       subtitle: "View history",
-      onClick: () => {}
+      onClick: onRecentTransactions
     },
   ];
 

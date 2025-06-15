@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { AuthManager } from "@/utils/authManager";
+import { WalletManager } from "@/utils/walletManager";
+import { useNavigate } from "react-router-dom";
 import { 
   Users, 
   CreditCard, 
@@ -20,115 +23,56 @@ import {
   Eye,
   CheckCircle,
   XCircle,
-  MessageSquare
+  MessageSquare,
+  LogOut
 } from "lucide-react";
 
 const AdminPanel = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [complaintResponse, setComplaintResponse] = useState("");
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletTransactions, setWalletTransactions] = useState<any[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // Mock data
-  const stats = {
-    totalUsers: 12450,
-    totalTransactions: 89230,
-    totalComplaints: 156,
-    todayRevenue: 45620
+  useEffect(() => {
+    if (!AuthManager.isAdminLoggedIn()) {
+      navigate("/admin-login");
+      return;
+    }
+
+    // Load real data
+    const savedHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
+    const walletHistory = WalletManager.getTransactions();
+    setTransactions(savedHistory);
+    setWalletTransactions(walletHistory);
+  }, [navigate]);
+
+  const handleLogout = () => {
+    AuthManager.clearAdminSession();
+    navigate("/");
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out successfully",
+    });
   };
 
-  const recentTransactions = [
-    {
-      id: "TXN001",
-      userId: "USR123",
-      type: "Mobile Recharge",
-      operator: "Jio",
-      amount: 199,
-      commission: 3.98,
-      status: "Success",
-      date: "2024-01-10 14:30",
-      phone: "9876543210"
-    },
-    {
-      id: "TXN002",
-      userId: "USR124",
-      type: "Electricity Bill",
-      operator: "MSEB",
-      amount: 850,
-      commission: 12.75,
-      status: "Success",
-      date: "2024-01-10 14:25",
-      phone: "9876543211"
-    },
-    {
-      id: "TXN003",
-      userId: "USR125",
-      type: "DTH Recharge",
-      operator: "Tata Sky",
-      amount: 299,
-      commission: 4.49,
-      status: "Pending",
-      date: "2024-01-10 14:20",
-      phone: "9876543212"
-    }
-  ];
-
-  const complaints = [
-    {
-      id: "CMP001",
-      transactionId: "TXN001",
-      userId: "USR123",
-      type: "Mobile Recharge",
-      operator: "Jio",
-      amount: 199,
-      message: "Recharge was deducted but not credited to my number",
-      status: "Open",
-      date: "2024-01-10 15:00",
-      userPhone: "9876543210"
-    },
-    {
-      id: "CMP002",
-      transactionId: "TXN045",
-      userId: "USR150",
-      type: "Bill Payment",
-      operator: "MSEB",
-      amount: 1200,
-      message: "Bill payment failed but amount was deducted",
-      status: "In Progress",
-      date: "2024-01-10 12:30",
-      userPhone: "9876543250"
-    }
-  ];
-
-  const users = [
-    {
-      id: "USR123",
-      name: "John Doe",
-      phone: "9876543210",
-      email: "john@example.com",
-      walletBalance: 1250,
-      totalSpent: 5640,
-      joinDate: "2024-01-01",
-      status: "Active"
-    },
-    {
-      id: "USR124",
-      name: "Jane Smith",
-      phone: "9876543211",
-      email: "jane@example.com",
-      walletBalance: 890,
-      totalSpent: 3200,
-      joinDate: "2024-01-02",
-      status: "Active"
-    }
-  ];
+  // Calculate real stats
+  const stats = {
+    totalUsers: 1250, // You can expand this with real user tracking
+    totalTransactions: transactions.length,
+    totalComplaints: 0, // You can add complaint tracking
+    todayRevenue: transactions
+      .filter(t => t.date === new Date().toISOString().split('T')[0])
+      .reduce((sum, t) => sum + (t.commission || 0), 0)
+  };
 
   const handleComplaintAction = (complaint: any, action: string) => {
     setSelectedComplaint(complaint);
     if (action === "resolve") {
       setShowComplaintDialog(true);
     } else if (action === "view") {
-      // View complaint details
       toast({
         title: "Complaint Details",
         description: `Transaction: ${complaint.transactionId}, Amount: ₹${complaint.amount}`,
@@ -172,9 +116,15 @@ const AdminPanel = () => {
             <h1 className="text-3xl font-bold text-green-primary">GreenCharge Admin</h1>
             <p className="text-muted-foreground">Manage transactions, users, and complaints</p>
           </div>
-          <Button className="green-gradient text-white">
-            Export Report
-          </Button>
+          <div className="flex space-x-2">
+            <Button className="green-gradient text-white">
+              Export Report
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -214,7 +164,7 @@ const AdminPanel = () => {
               <TrendingUp className="h-8 w-8 text-purple-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Today's Revenue</p>
-                <p className="text-2xl font-bold">₹{stats.todayRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">₹{stats.todayRevenue.toFixed(2)}</p>
               </div>
             </div>
           </Card>
@@ -225,7 +175,7 @@ const AdminPanel = () => {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="complaints">Complaints</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="wallet">Wallet History</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -246,56 +196,71 @@ const AdminPanel = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Transaction ID</TableHead>
-                    <TableHead>User</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Operator</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Commission</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTransactions.map((transaction) => (
+                  {transactions.slice(0, 10).map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell className="font-medium">{transaction.id}</TableCell>
-                      <TableCell>{transaction.userId}</TableCell>
                       <TableCell>{transaction.type}</TableCell>
                       <TableCell>{transaction.operator}</TableCell>
                       <TableCell>₹{transaction.amount}</TableCell>
-                      <TableCell>₹{transaction.commission}</TableCell>
+                      <TableCell>₹{transaction.commission?.toFixed(2) || '0.00'}</TableCell>
                       <TableCell>
                         <Badge variant={transaction.status === "Success" ? "default" : "secondary"}>
                           {transaction.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{transaction.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          {/* Wallet History Tab */}
+          <TabsContent value="wallet">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Wallet Transactions</h2>
+                <div className="text-lg font-bold">
+                  Current Balance: ₹{WalletManager.getBalance().toFixed(2)}
+                </div>
+              </div>
+              
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Transaction ID</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Balance After</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {walletTransactions.slice(0, 10).map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="font-medium">{transaction.id}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-1">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {transaction.status === "Pending" && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateTransactionStatus(transaction.id, "Success")}
-                              >
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateTransactionStatus(transaction.id, "Failed")}
-                              >
-                                <XCircle className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <Badge variant={transaction.type === "credit" ? "default" : "secondary"}>
+                          {transaction.type}
+                        </Badge>
                       </TableCell>
+                      <TableCell className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
+                        {transaction.type === "credit" ? "+" : "-"}₹{transaction.amount}
+                      </TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>₹{transaction.balanceAfter}</TableCell>
+                      <TableCell>{new Date(transaction.timestamp).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -308,114 +273,18 @@ const AdminPanel = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Customer Complaints</h2>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-muted-foreground">
+                  Complaints are handled via WhatsApp (+91 9789456787)
+                </p>
               </div>
               
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Complaint ID</TableHead>
-                    <TableHead>Transaction ID</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {complaints.map((complaint) => (
-                    <TableRow key={complaint.id}>
-                      <TableCell className="font-medium">{complaint.id}</TableCell>
-                      <TableCell>{complaint.transactionId}</TableCell>
-                      <TableCell>{complaint.userId}</TableCell>
-                      <TableCell>{complaint.type}</TableCell>
-                      <TableCell>₹{complaint.amount}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            complaint.status === "Open" ? "destructive" :
-                            complaint.status === "In Progress" ? "secondary" : "default"
-                          }
-                        >
-                          {complaint.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{complaint.date}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleComplaintAction(complaint, "view")}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleComplaintAction(complaint, "resolve")}
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">User Management</h2>
-                <Input placeholder="Search users..." className="w-64" />
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-muted-foreground">No pending complaints</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Customer complaints are directly sent to WhatsApp for real-time resolution
+                </p>
               </div>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Wallet Balance</TableHead>
-                    <TableHead>Total Spent</TableHead>
-                    <TableHead>Join Date</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.id}</TableCell>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.phone}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>₹{user.walletBalance}</TableCell>
-                      <TableCell>₹{user.totalSpent}</TableCell>
-                      <TableCell>{user.joinDate}</TableCell>
-                      <TableCell>
-                        <Badge variant="default">{user.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </Card>
           </TabsContent>
 
@@ -427,41 +296,43 @@ const AdminPanel = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span>Today's Revenue:</span>
-                    <span className="font-bold">₹45,620</span>
+                    <span className="font-bold">₹{stats.todayRevenue.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>This Week:</span>
-                    <span className="font-bold">₹2,34,560</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>This Month:</span>
-                    <span className="font-bold">₹8,45,220</span>
+                    <span>Total Transactions:</span>
+                    <span className="font-bold">{transactions.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Total Commission:</span>
-                    <span className="font-bold">₹1,23,450</span>
+                    <span className="font-bold">
+                      ₹{transactions.reduce((sum, t) => sum + (t.commission || 0), 0).toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </Card>
               
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Transaction Analytics</h3>
+                <h3 className="text-lg font-semibold mb-4">Transaction Types</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span>Mobile Recharges:</span>
-                    <span className="font-bold">45%</span>
+                    <span className="font-bold">
+                      {transactions.filter(t => t.type === "Mobile Recharge").length}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Bill Payments:</span>
-                    <span className="font-bold">35%</span>
+                    <span className="font-bold">
+                      {transactions.filter(t => t.type.includes("Bill")).length}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>DTH Recharges:</span>
-                    <span className="font-bold">15%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Others:</span>
-                    <span className="font-bold">5%</span>
+                    <span>Success Rate:</span>
+                    <span className="font-bold">
+                      {transactions.length > 0 ? 
+                        ((transactions.filter(t => t.status === "Success").length / transactions.length) * 100).toFixed(1) + '%' 
+                        : '0%'}
+                    </span>
                   </div>
                 </div>
               </Card>
