@@ -1,22 +1,103 @@
+
 import Header from "@/components/layout/Header";
 import BottomNavigation from "@/components/layout/BottomNavigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Phone, Settings, Bell, History, Wallet, Check, FileText, Shield } from "lucide-react";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { User, Phone, Settings, Bell, History, Check, FileText, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  const [showLinkedNumbers, setShowLinkedNumbers] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  
+  const [personalInfo, setPersonalInfo] = useState({
+    name: "Rahul Sharma",
+    email: "rahul.sharma@example.com",
+    phone: "+91 98765 43210"
+  });
+  
+  const [linkedNumbers, setLinkedNumbers] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load user data from localStorage
+    const savedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+    if (savedUserData.name) {
+      setPersonalInfo(prev => ({ ...prev, ...savedUserData }));
+    }
+
+    // Load linked numbers from transaction history
+    const transactions = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
+    const phoneNumbers = [...new Set(transactions
+      .filter((t: any) => t.fullNumber || t.number)
+      .map((t: any) => t.fullNumber || t.number)
+    )];
+    setLinkedNumbers(phoneNumbers);
+
+    // Load notifications
+    const savedNotifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
+    setNotifications(savedNotifications);
+  }, []);
+
+  const handleSavePersonalInfo = () => {
+    localStorage.setItem('userData', JSON.stringify(personalInfo));
+    toast({
+      title: "Profile Updated",
+      description: "Your personal information has been saved successfully.",
+    });
+    setShowPersonalInfo(false);
+  };
+
+  const handleTransactionHistory = () => {
+    navigate('/wallet');
+  };
+
+  const handleSettings = () => {
+    navigate('/settings');
+  };
 
   const menuItems = [
-    { icon: User, title: "Personal Information", subtitle: "Update your details" },
-    { icon: Phone, title: "Linked Numbers", subtitle: "Manage mobile numbers" },
-    { icon: Wallet, title: "Payment Methods", subtitle: "Cards & UPI" },
-    { icon: Bell, title: "Notifications", subtitle: "Alerts & reminders" },
-    { icon: History, title: "Transaction History", subtitle: "View all transactions" },
-    { icon: Settings, title: "Settings", subtitle: "App preferences" },
+    { 
+      icon: User, 
+      title: "Personal Information", 
+      subtitle: "Update your details",
+      onClick: () => setShowPersonalInfo(true)
+    },
+    { 
+      icon: Phone, 
+      title: "Linked Numbers", 
+      subtitle: "Manage mobile numbers",
+      onClick: () => setShowLinkedNumbers(true)
+    },
+    { 
+      icon: Bell, 
+      title: "Notifications", 
+      subtitle: "View notifications",
+      onClick: () => setShowNotifications(true)
+    },
+    { 
+      icon: History, 
+      title: "Transaction History", 
+      subtitle: "View wallet transactions",
+      onClick: handleTransactionHistory
+    },
+    { 
+      icon: Settings, 
+      title: "Settings", 
+      subtitle: "App preferences",
+      onClick: handleSettings
+    },
   ];
 
   const legalItems = [
@@ -36,7 +117,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header title="My Profile" />
+      <Header title="My Profile" showProfile={false} />
       
       <div className="p-4">
         {/* Profile Header */}
@@ -44,8 +125,8 @@ const Profile = () => {
           <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <User size={32} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold mb-1">Rahul Sharma</h2>
-          <p className="text-white/80 text-sm mb-1">+91 98765 43210</p>
+          <h2 className="text-xl font-bold mb-1">{personalInfo.name}</h2>
+          <p className="text-white/80 text-sm mb-1">{personalInfo.phone}</p>
           <div className="flex items-center justify-center space-x-1 text-white/90">
             <Check size={14} />
             <span className="text-xs">Verified Account</span>
@@ -75,6 +156,7 @@ const Profile = () => {
               key={index}
               className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 animate-fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
+              onClick={item.onClick}
             >
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-light rounded-lg">
@@ -127,6 +209,95 @@ const Profile = () => {
           </Button>
         </div>
       </div>
+
+      {/* Personal Information Dialog */}
+      <Dialog open={showPersonalInfo} onOpenChange={setShowPersonalInfo}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Personal Information</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                value={personalInfo.name}
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter your full name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={personalInfo.email}
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Enter your email address"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                value={personalInfo.phone}
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Enter your phone number"
+                disabled
+              />
+              <p className="text-xs text-muted-foreground mt-1">Phone number cannot be changed</p>
+            </div>
+            <Button onClick={handleSavePersonalInfo} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Linked Numbers Dialog */}
+      <Dialog open={showLinkedNumbers} onOpenChange={setShowLinkedNumbers}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Linked Numbers</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {linkedNumbers.length > 0 ? (
+              linkedNumbers.map((number, index) => (
+                <Card key={index} className="p-3">
+                  <div className="flex items-center space-x-3">
+                    <Phone size={16} className="text-green-primary" />
+                    <span className="font-medium">{number}</span>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No linked numbers found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notifications Dialog */}
+      <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Notifications</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {notifications.length > 0 ? (
+              notifications.map((notification, index) => (
+                <Card key={index} className="p-4">
+                  <h4 className="font-semibold mb-2">{notification.title}</h4>
+                  <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
+                  <p className="text-xs text-gray-500">{new Date(notification.timestamp).toLocaleString()}</p>
+                </Card>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No notifications yet</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Terms & Conditions Dialog */}
       <Dialog open={showTerms} onOpenChange={setShowTerms}>

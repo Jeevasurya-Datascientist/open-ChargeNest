@@ -10,6 +10,7 @@ import History from "./pages/History";
 import Wallet from "./pages/Wallet";
 import Offers from "./pages/Offers";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -42,6 +43,7 @@ const App = () => {
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/offers" element={<Offers />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="*" element={<NotFound />} />
