@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'Phone number and OTP are required' 
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -59,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'OTP not found or expired. Please request a new OTP.' 
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'OTP has expired. Please request a new OTP.' 
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'Invalid OTP. Please check and try again.' 
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
         error: 'Failed to verify OTP. Please try again.' 
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );

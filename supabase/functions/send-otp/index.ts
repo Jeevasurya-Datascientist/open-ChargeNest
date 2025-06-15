@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'Phone number is required' 
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -154,8 +154,8 @@ const handler = async (req: Request): Promise<Response> => {
         error: 'Failed to send OTP. Please try again.' 
       }),
       {
-        status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
