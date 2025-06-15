@@ -19,15 +19,35 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phoneNumber, otp }: VerifyOTPRequest = await req.json();
     
+    if (!phoneNumber || !otp) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Phone number and OTP are required' 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Clean phone number
+    const cleanedNumber = phoneNumber.replace(/[\s\-\+]/g, '').replace(/^91/, '');
+    
+    // Initialize global store if it doesn't exist
+    if (!globalThis.otpStore) {
+      globalThis.otpStore = new Map();
+    }
+    
     // Get OTP from memory store
-    globalThis.otpStore = globalThis.otpStore || new Map();
-    const storedOtpData = globalThis.otpStore.get(phoneNumber);
+    const storedOtpData = globalThis.otpStore.get(cleanedNumber);
     
     if (!storedOtpData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'OTP not found or expired' 
+          error: 'OTP not found or expired. Please request a new OTP.' 
         }),
         {
           status: 400,
@@ -38,11 +58,11 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Check if OTP is expired
     if (Date.now() > storedOtpData.expiresAt) {
-      globalThis.otpStore.delete(phoneNumber);
+      globalThis.otpStore.delete(cleanedNumber);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'OTP has expired' 
+          error: 'OTP has expired. Please request a new OTP.' 
         }),
         {
           status: 400,
@@ -54,9 +74,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify OTP
     if (storedOtpData.otp === otp) {
       // Remove OTP after successful verification
-      globalThis.otpStore.delete(phoneNumber);
+      globalThis.otpStore.delete(cleanedNumber);
       
-      console.log(`OTP verified successfully for ${phoneNumber}`);
+      console.log(`✅ OTP verified successfully for ${cleanedNumber}`);
       
       return new Response(
         JSON.stringify({ 
@@ -69,10 +89,11 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     } else {
+      console.log(`❌ Invalid OTP for ${cleanedNumber}. Expected: ${storedOtpData.otp}, Got: ${otp}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Invalid OTP' 
+          error: 'Invalid OTP. Please check and try again.' 
         }),
         {
           status: 400,
@@ -85,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: 'Failed to verify OTP. Please try again.' 
       }),
       {
         status: 500,
