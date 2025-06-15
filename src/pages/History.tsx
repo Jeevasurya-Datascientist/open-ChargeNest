@@ -87,7 +87,7 @@ Issue: Please help resolve this transaction issue.`;
   const generatePDFReceipt = (transaction: any) => {
     const receiptContent = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                        GREENCHARGE RECEIPT
+                        ANYPAY HUB RECEIPT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Transaction Details:
@@ -107,17 +107,17 @@ Payment Method: ${transaction.paymentMethod || 'Wallet'}
 
 Customer Information:
 ──────────────────────────────────────────────────────────────
-Service provided by GreenCharge Hub
+Service provided by AnyPay Hub
 All transactions are secured and encrypted
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Thank you for using GreenCharge!
-For support: contact@greencharge.com
+Thank you for using AnyPay Hub!
+For support: contact@anypayhub.com
 Support WhatsApp: +91 9789456787
 
 Terms and conditions apply.
-Visit www.greencharge.com for more details.
+Visit www.anypayhub.com for more details.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `;
@@ -127,7 +127,7 @@ Visit www.greencharge.com for more details.
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `GreenCharge_Receipt_${transaction.id}.txt`;
+    link.download = `AnyPayHub_Receipt_${transaction.id}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -141,7 +141,7 @@ Visit www.greencharge.com for more details.
 
   const handleShare = (transaction: any) => {
     const receiptText = `
-GreenCharge Receipt
+AnyPay Hub Receipt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Transaction ID: ${transaction.id}
 Type: ${transaction.type}
@@ -151,7 +151,7 @@ Amount: ₹${transaction.amount}
 Status: ${transaction.status}
 Date: ${transaction.date}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Thank you for using GreenCharge!
+Thank you for using AnyPay Hub!
     `;
     
     if (navigator.share) {

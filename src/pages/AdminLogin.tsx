@@ -47,6 +47,12 @@ const AdminLogin = () => {
     }, 1000);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6">
@@ -74,6 +80,7 @@ const AdminLogin = () => {
               placeholder="Enter admin phone number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="mt-1"
             />
           </div>
@@ -86,6 +93,7 @@ const AdminLogin = () => {
               placeholder="Enter admin password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="mt-1"
             />
           </div>
