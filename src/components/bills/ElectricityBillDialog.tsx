@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { generateConsumerName, generateBillNumber } from "@/utils/nameGenerator";
 
 interface ElectricityBillDialogProps {
   isOpen: boolean;
@@ -50,20 +52,24 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
     });
 
     setTimeout(() => {
+      const consumerName = generateConsumerName(consumerId);
+      const boardCode = board.split(" - ")[0];
+      const billNumber = generateBillNumber(consumerId, boardCode);
+      
       const mockBillData = {
-        consumerName: "John Doe",
+        consumerName,
         consumerId: consumerId,
-        board: board.split(" - ")[0],
+        board: boardCode,
         billAmount: Math.floor(Math.random() * 2000) + 500, // Random amount between 500-2500
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        billNumber: `EB${Date.now()}`,
+        billNumber,
         units: Math.floor(Math.random() * 300) + 100
       };
       setBillInfo(mockBillData);
       setStep(2);
       toast({
         title: "Bill Fetched",
-        description: "Bill details loaded successfully!",
+        description: `Bill for ${consumerName} loaded successfully!`,
       });
     }, 2000);
   };
@@ -92,7 +98,7 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
 
     toast({
       title: "Payment Initiated",
-      description: `Processing ₹${billAmount.toFixed(2)} payment...`,
+      description: `Processing ₹${billAmount.toFixed(2)} payment for ${billInfo.consumerName}...`,
     });
 
     setTimeout(() => {
@@ -104,7 +110,7 @@ const ElectricityBillDialog = ({ isOpen, onClose, onSuccess }: ElectricityBillDi
       setBillInfo(null);
       toast({
         title: "Payment Successful",
-        description: `₹${billAmount.toFixed(2)} paid successfully!`,
+        description: `₹${billAmount.toFixed(2)} paid successfully to ${billInfo.consumerName}!`,
       });
     }, 2000);
   };
