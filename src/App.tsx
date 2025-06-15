@@ -44,6 +44,8 @@ const App = () => {
             <Route path="/offers" element={<Offers />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="*" element={<NotFound />} />

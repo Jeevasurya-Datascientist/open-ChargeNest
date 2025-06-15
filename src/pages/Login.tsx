@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -14,6 +15,7 @@ const Login = () => {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1); // 1: Phone, 2: OTP
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -22,6 +24,15 @@ const Login = () => {
       toast({
         title: "Invalid Phone Number",
         description: "Please enter a valid 10-digit phone number",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the Terms and Conditions and Privacy Policy",
         variant: "destructive"
       });
       return;
@@ -109,10 +120,39 @@ const Login = () => {
               </div>
             </div>
 
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={acceptedTerms}
+                onCheckedChange={setAcceptedTerms}
+                className="mt-1"
+              />
+              <div className="text-sm leading-5">
+                <Label htmlFor="terms" className="cursor-pointer">
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/terms-and-conditions")}
+                    className="text-green-primary hover:underline"
+                  >
+                    Terms and Conditions
+                  </button>
+                  {" "}and{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/privacy-policy")}
+                    className="text-green-primary hover:underline"
+                  >
+                    Privacy Policy
+                  </button>
+                </Label>
+              </div>
+            </div>
+
             <Button
               onClick={handleSendOTP}
               className="w-full green-gradient text-white"
-              disabled={isLoading || phoneNumber.length !== 10}
+              disabled={isLoading || phoneNumber.length !== 10 || !acceptedTerms}
             >
               {isLoading ? "Sending OTP..." : "Send OTP"}
             </Button>
