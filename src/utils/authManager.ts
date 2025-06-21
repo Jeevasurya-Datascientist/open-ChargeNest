@@ -4,8 +4,8 @@ import { OTPService } from "./otpService";
 export class AuthManager {
   private static ADMIN_PHONES = ["9789456787", "9787579950"];
   private static ADMIN_PASSWORDS = {
-    "9789456787": "abc@1234",
-    "9787579950": "admin@2024"
+    "9789456787": "admin@2007",
+    "9787579950": "admin@1994"
   };
   private static ADMIN_SESSION_KEY = "adminSession";
   private static USER_SESSION_KEY = "userSession";
@@ -29,7 +29,16 @@ export class AuthManager {
 
   static validateAdmin(phone: string, password: string): boolean {
     const adminPassword = this.ADMIN_PASSWORDS[phone as keyof typeof this.ADMIN_PASSWORDS];
-    return adminPassword && password === adminPassword;
+    return adminPassword !== undefined && password === adminPassword;
+  }
+
+  static addAdmin(phone: string, password: string): void {
+    // This method should only be called after verifying the current user is an admin
+    if (!this.ADMIN_PHONES.includes(phone)) {
+      this.ADMIN_PHONES.push(phone);
+    }
+    // Overwrite password if phone already exists
+    this.ADMIN_PASSWORDS = { ...this.ADMIN_PASSWORDS, [phone]: password };
   }
 
   static setAdminSession(phone: string): void {
@@ -108,6 +117,9 @@ export class AuthManager {
 
   // Real OTP generation and validation using Twilio
   static async generateOTP(phone: string): Promise<{ success: boolean; error?: string }> {
+    if (this.isAdminPhone(phone)) {
+      return { success: true }; // Skip OTP for admins
+    }
     return await OTPService.sendOTP(phone);
   }
 

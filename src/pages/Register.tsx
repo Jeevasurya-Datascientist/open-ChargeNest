@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ArrowLeft, UserPlus } from "lucide-react";
-import { AuthManager } from "@/utils/authManager";
+import { AuthManager } from "@/utils/authManager"; // Keep AuthManager for phone/OTP
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +23,8 @@ const Register = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const auth = getAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -169,6 +172,34 @@ const Register = () => {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      // Here you would typically handle the new user registration with Google
+      // For this example, we'll just navigate to the home page
+      console.log("Google sign-up successful:", user);
+      toast({
+        title: "Sign up with Google Successful",
+        description: "Welcome to AnyPay Hub!",
+      });
+      // You would likely want to save the user data to your database here
+      // And potentially trigger the email confirmation process
+      navigate("/");
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error("Google sign-up error:", error);
+      toast({
+        title: "Google Sign-up Failed",
+        description: error.message || "An error occurred during Google Sign-up.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6 space-y-6">
@@ -262,6 +293,14 @@ const Register = () => {
               {isLoading ? "Sending OTP..." : "Send OTP"}
             </Button>
 
+            <div className="flex items-center justify-center space-x-2">
+              <div className="flex-grow border-t border-gray-300"></div>
+              <span className="text-sm text-muted-foreground">OR</span>
+              <div className="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <Button onClick={handleGoogleSignUp} className="w-full" variant="outline" disabled={isLoading}>Sign up with Google</Button>
+
             <div className="text-center">
               <button
                 onClick={() => navigate("/login")}
@@ -316,6 +355,14 @@ const Register = () => {
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
 
+             {/* Add Google Sign-up option here as well if needed on OTP failure */}
+             {/* This might require state to track OTP failure */}
+             {/* <Button onClick={handleGoogleSignUp} className="w-full" variant="outline" disabled={isLoading}>Sign up with Google</Button> */}
+              <div className="flex items-center justify-center space-x-2">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="text-sm text-muted-foreground">OR</span>
+                <div className="flex-grow border-t border-gray-300"></div>
+              </div>
             <div className="text-center">
               <button
                 onClick={handleResendOTP}

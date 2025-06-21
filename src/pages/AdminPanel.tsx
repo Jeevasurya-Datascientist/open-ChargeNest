@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const AdminPanel = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showCreateNotification, setShowCreateNotification] = useState(false);
   const [notification, setNotification] = useState({
     title: "",
@@ -38,6 +39,12 @@ const AdminPanel = () => {
     pendingComplaints: 0
   });
 
+  const [showAddAdminDialog, setShowAddAdminDialog] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({
+    phone: "",
+    password: "",
+  });
+
   const [users, setUsers] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [complaints, setComplaints] = useState<any[]>([]);
@@ -47,6 +54,7 @@ const AdminPanel = () => {
 
   useEffect(() => {
     loadRealTimeData();
+    setIsAdmin(AuthManager.isAdminLoggedIn());
   }, []);
 
   const loadRealTimeData = () => {
@@ -109,6 +117,26 @@ const AdminPanel = () => {
 
     setNotification({ title: "", message: "", type: "info" });
     setShowCreateNotification(false);
+  };
+
+  const handleAddAdmin = () => {
+    if (!newAdmin.phone || !newAdmin.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    AuthManager.addAdmin(newAdmin.phone, newAdmin.password);
+    toast({
+      title: "Admin Added",
+      description: `New admin with phone ${newAdmin.phone} added successfully.`,
+    });
+
+    setNewAdmin({ phone: "", password: "" });
+    setShowAddAdminDialog(false);
   };
 
   return (
@@ -268,6 +296,17 @@ const AdminPanel = () => {
             ))}
           </div>
         </Card>
+
+        {/* Admin Management */}
+        {isAdmin && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+              <Users size={24} />
+              <span>Admin Management</span>
+            </h2>
+            <Button onClick={() => setShowAddAdminDialog(true)}>Add New Admin</Button>
+          </Card>
+        )}
       </div>
 
       {/* Create Notification Dialog */}
@@ -304,6 +343,37 @@ const AdminPanel = () => {
                 Cancel
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Admin Dialog */}
+      <Dialog open={showAddAdminDialog} onOpenChange={setShowAddAdminDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Admin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="admin-phone">Phone Number</Label>
+              <Input
+                id="admin-phone"
+                value={newAdmin.phone}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Enter phone number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={newAdmin.password}
+                onChange={(e) => setNewAdmin(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Enter password"
+              />
+            </div>
+            <Button onClick={handleAddAdmin}>Add Admin</Button>
           </div>
         </DialogContent>
       </Dialog>
