@@ -1,383 +1,312 @@
-import { useState } from "react";
+// src/pages/Login.tsx
+
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence, Variants, Transition } from "framer-motion";
+
+// --- UI & Icons ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ArrowLeft, Smartphone, Shield } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+
+// --- Logic ---
 import { AuthManager } from "@/utils/authManager";
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  getAdditionalUserInfo,
-  sendEmailVerification
-} from "firebase/auth";
-import { auth } from "@/firebase";
-import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
+
+// --- Animation properties ---
+const stepAnimationVariants: Variants = {
+  initial: { opacity: 0, x: -30 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 30 },
+};
+
+const stepAnimationTransition: Transition = {
+  duration: 0.3,
+  ease: "easeInOut",
+};
+
+const titleContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.2 },
+  },
+};
+
+const titleLetterVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", damping: 12, stiffness: 100 },
+  },
+};
+
+const textAnimationVariants: Variants = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.5 } },
+};
 
 const Login = () => {
+  // --- STATE MANAGEMENT ---
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [step, setStep] = useState(1);
+  const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showGoogleSignInOnOTPError, setShowGoogleSignInOnOTPError] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  const cyclingTexts = [
+    "Enter your phone number to continue",
+    "Quick, Secure, and Easy Login",
+    "Your one-stop for all recharges"
+  ];
+  const [textIndex, setTextIndex] = useState(0);
+
+  // --- HOOKS ---
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOTP = async () => {
-    if (!phoneNumber || phoneNumber.length !== 10) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid 10-digit phone number",
-        variant: "destructive"
-      });
-      return;
-    }
+  // --- EFFECT HOOKS ---
+  useEffect(() => {
+    const textInterval = setInterval(() => {
+      setTextIndex(prevIndex => (prevIndex + 1) % cyclingTexts.length);
+    }, 10000); 
 
-    if (!acceptedTerms) {
-      toast({
-        title: "Terms Required",
-        description: "Please accept the Terms and Conditions and Privacy Policy",
-        variant: "destructive"
-      });
-      return;
-    }
+    return () => clearInterval(textInterval);
+  }, [cyclingTexts.length]);
 
-    const isAdmin = AuthManager.isAdminPhone(phoneNumber);
-
-    if (isAdmin) {
-      setIsAdminLogin(true);
-      setStep(2);
-      return;
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
     }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
-    setIsLoading(true);
-    try {
-      const result = await AuthManager.generateOTP(phoneNumber);
-      if (result.success) {
-        setStep(3);
-        toast({
-          title: "OTP Sent",
-          description: `OTP sent to +91 ${phoneNumber} via SMS`,
-        });
-      } else {
-        toast({
-          title: "Failed to Send OTP",
-          description: result.error || "Please try again",
-          variant: "destructive"
-        });
-        setShowGoogleSignInOnOTPError(true);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send OTP. Please try again.",
-        variant: "destructive"
-      });
-      setShowGoogleSignInOnOTPError(true);
-    } finally {
-      setIsLoading(false);
+  // --- UTILITY & VALIDATION ---
+  const validatePhoneNumber = (num: string) => {
+    if (!num) {
+      setPhoneError("Phone number is required.");
+      return false;
     }
+    if (!/^\d{10}$/.test(num)) {
+      setPhoneError("Please enter a valid 10-digit phone number.");
+      return false;
+    }
+    setPhoneError(null);
+    return true;
   };
 
-  const handleAdminPasswordVerification = async () => {
-    if (!password) {
-      toast({
-        title: "Password Required",
-        description: "Please enter your admin password",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handlePhoneNumberChange = (value: string) => {
+    const sanitizedValue = value.replace(/\D/g, '').slice(0, 10);
+    setPhoneNumber(sanitizedValue);
+    validatePhoneNumber(sanitizedValue);
+  };
+
+  const startCountdown = () => setCountdown(30);
+
+  // --- AUTHENTICATION HANDLERS ---
+  const handleContinue = async () => {
+    if (!validatePhoneNumber(phoneNumber) || isLoading) return;
 
     setIsLoading(true);
-    setTimeout(async () => {
-      if (AuthManager.validateAdmin(phoneNumber, password)) {
-        try {
-          const result = await AuthManager.generateOTP(phoneNumber);
-          if (result.success) {
-            setStep(3);
-            toast({
-              title: "Password Verified",
-              description: `OTP sent to +91 ${phoneNumber} via SMS`,
-            });
-          } else {
-            toast({
-              title: "Failed to Send OTP",
-              description: result.error || "Please try again",
-              variant: "destructive"
-            });
-            setShowGoogleSignInOnOTPError(true);
-          }
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to send OTP. Please try again.",
-            variant: "destructive"
-          });
-          setShowGoogleSignInOnOTPError(true);
-        } finally {
-          setIsLoading(false);
-        }
+
+    if (AuthManager.isAdminPhone(phoneNumber)) {
+      setIsVerifyingAdmin(true);
+      setStep(2);
+      toast({ title: "Admin Detected", description: "Please enter your password to continue." });
+    } else {
+      setIsVerifyingAdmin(false);
+      const { success, error } = await AuthManager.generateOTP(phoneNumber);
+      if (success) {
+        toast({ title: "OTP Sent", description: `An OTP has been sent to +91 ${phoneNumber}` });
+        setStep(2);
+        startCountdown();
       } else {
-        setIsLoading(false);
-        toast({
-          title: "Invalid Password",
-          description: "Please check your admin password and try again",
-          variant: "destructive"
-        });
-        setShowGoogleSignInOnOTPError(false);
+        toast({ title: "Failed to send OTP", description: error || "An unknown error occurred.", variant: "destructive" });
       }
-    }, 1000);
+    }
+    setIsLoading(false);
+  };
+  
+  const handleResendOTP = async () => {
+    if (isResending || countdown > 0) return;
+    
+    setIsResending(true);
+    const { success, error } = await AuthManager.generateOTP(phoneNumber);
+    setIsResending(false);
+    
+    if (success) {
+      toast({ title: "OTP Resent Successfully", description: `A new OTP was sent to +91 ${phoneNumber}` });
+      startCountdown();
+    } else {
+      toast({ title: "Failed to resend OTP", description: error || "An unknown error occurred.", variant: "destructive" });
+    }
   };
 
   const handleVerifyOTP = async () => {
-    if (!otp || otp.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit OTP",
-        variant: "destructive"
-      });
+    if (otp.length !== 6) {
+      toast({ title: "Invalid OTP", description: "Please enter the 6-digit OTP.", variant: "destructive" });
       return;
     }
-
     setIsLoading(true);
-    try {
-      const result = await AuthManager.validateOTP(phoneNumber, otp);
-      if (result.success) {
-        if (isAdminLogin) {
-          AuthManager.setAdminSession(phoneNumber);
-          toast({
-            title: "Admin Login Successful",
-            description: "Welcome to Admin Panel!",
-          });
-          navigate("/admin");
-        } else {
-          AuthManager.setUserSession(phoneNumber);
-          toast({
-            title: "Login Successful",
-            description: "Welcome to AnyPay Hub!",
-          });
-          navigate("/");
-        }
-      } else {
-        toast({
-          title: "Invalid OTP",
-          description: result.error || "Please check the OTP and try again",
-          variant: "destructive"
-        });
-        setShowGoogleSignInOnOTPError(true);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify OTP. Please try again.",
-        variant: "destructive"
-      });
-      setShowGoogleSignInOnOTPError(true);
-    } finally {
+    const { success, error } = await AuthManager.validateOTP(phoneNumber, otp);
+
+    if (success) {
+      AuthManager.setUserSession(phoneNumber);
+      toast({ title: "Login Successful!", description: "Welcome to Charge Nest." });
+      setTimeout(() => navigate("/", { replace: true }), 300);
+    } else {
+      toast({ title: "OTP Verification Failed", description: error || "The OTP you entered is incorrect.", variant: "destructive" });
       setIsLoading(false);
     }
   };
+
+  const handleAdminLogin = async () => {
+    if (!password) {
+        setPasswordError("Password is required.");
+        return;
+    }
+    setPasswordError(null);
+    setIsLoading(true);
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    if (AuthManager.validateAdmin(phoneNumber, password)) {
+        AuthManager.setAdminSession(phoneNumber);
+        toast({ title: "Admin Login Successful!", description: "Redirecting to the admin panel." });
+        
+        // FIX: Navigate to the lowercase path, which is the standard convention for routes.
+        // Use { replace: true } to remove the login page from browser history.
+        setTimeout(() => {
+            navigate("/admin", { replace: true });
+        }, 500);
+
+    } else {
+        setPasswordError("Invalid password. Please try again.");
+        toast({ title: "Login Failed", description: "The password you entered is incorrect.", variant: "destructive" });
+        setIsLoading(false);
+    }
+  }
 
   const goBack = () => {
-    if (step === 3) {
-      setStep(isAdminLogin ? 2 : 1);
-    } else if (step === 2) {
-      setStep(1);
-      setIsAdminLogin(false);
-      setPassword("");
-    }
+    setStep(1);
     setOtp("");
-    setShowGoogleSignInOnOTPError(false);
+    setPassword("");
+    setPasswordError(null);
+    setIsVerifyingAdmin(false);
+    setCountdown(0);
   };
 
-  const handleResendOTP = async () => {
-    setIsLoading(true);
-    try {
-      const result = await AuthManager.generateOTP(phoneNumber);
-      if (result.success) {
-        toast({
-          title: "OTP Resent",
-          description: `New OTP sent to +91 ${phoneNumber} via SMS`,
-        });
-      } else {
-        toast({
-          title: "Failed to Resend OTP",
-          description: result.error || "Please try again",
-          variant: "destructive"
-        });
-        setShowGoogleSignInOnOTPError(true);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend OTP. Please try again.",
-        variant: "destructive"
-      });
-      setShowGoogleSignInOnOTPError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({
-      'client_id': import.meta.env.VITE_GOOGLE_CLIENT_ID
-    });
-
-    setIsLoading(true);
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const additionalUserInfo = getAdditionalUserInfo(result);
-
-      if (additionalUserInfo?.isNewUser && user.email) {
-        await sendEmailVerification(user);
-        toast({ title: "Sign-up Successful!", description: "A confirmation email has been sent." });
-        navigate("/");
-      } else {
-        toast({ title: "Login Successful", description: `Welcome back, ${user.displayName}!` });
-        navigate("/");
-      }
-    } catch (error: any) {
-      console.error("Google Sign-in error:", error.code, error.message);
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        toast({
-          title: "Google Sign-in Failed",
-          description: error.message || "An unexpected error occurred.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const appNamePart1 = "Charge";
+  const appNamePart2 = "Nest";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-green-gradient rounded-full flex items-center justify-center">
-            {isAdminLogin ? <Shield className="h-8 w-8 text-white" /> : <Smartphone className="h-8 w-8 text-white" />}
-          </div>
-          <h1 className="text-2xl font-bold text-green-primary">
-            {isAdminLogin ? "Admin Login" : "AnyPay Hub"}
-          </h1>
-          <p className="text-muted-foreground">
-            {step === 1 ? "Enter your phone number or sign in with Google" : step === 2 ? "Enter your admin password" : "Enter the OTP sent to your phone"}
-          </p>
-        </div>
-
-        {step === 1 && (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="flex mt-1">
-                <div className="flex items-center px-3 border border-r-0 rounded-l-md bg-gray-50">
-                  <span className="text-sm text-gray-600">+91</span>
-                </div>
-                <Input id="phone" type="tel" placeholder="Enter 10-digit phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} className="rounded-l-none" maxLength={10} />
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <Checkbox id="terms" checked={acceptedTerms} onCheckedChange={(checked) => setAcceptedTerms(checked === true)} className="mt-1" />
-              <div className="text-sm leading-5">
-                <Label htmlFor="terms" className="cursor-pointer">
-                  I agree to the{" "}
-                  <button type="button" onClick={() => navigate("/terms-and-conditions")} className="text-green-primary hover:underline">
-                    Terms and Conditions
-                  </button>
-                  {" "}and{" "}
-                  <button type="button" onClick={() => navigate("/privacy-policy")} className="text-green-primary hover:underline">
-                    Privacy Policy
-                  </button>
-                </Label>
-              </div>
-            </div>
-            <Button onClick={handleSendOTP} className="w-full green-gradient text-white" disabled={isLoading || phoneNumber.length !== 10 || !acceptedTerms}>
-              {isLoading ? "Processing..." : "Continue with Phone"}
-            </Button>
-            <GoogleSignInButton onClick={handleGoogleSignIn} disabled={isLoading}>
-              Sign in with Google
-            </GoogleSignInButton>
-            <div className="text-center">
-              <button onClick={() => navigate("/register")} className="text-sm text-green-primary hover:underline">
-                Don't have an account? Register
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && isAdminLogin && (
-          <div className="space-y-4">
-            <Button variant="ghost" onClick={goBack} className="p-0 h-auto text-green-primary">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Change Number
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              Admin phone: +91 {phoneNumber}
-            </div>
-            <div>
-              <Label htmlFor="password">Admin Password</Label>
-              <Input id="password" type="password" placeholder="Enter admin password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" />
-            </div>
-            <Button onClick={handleAdminPasswordVerification} className="w-full green-gradient text-white" disabled={isLoading || !password}>
-              {isLoading ? "Verifying..." : "Verify Password"}
-            </Button>
-            <GoogleSignInButton onClick={handleGoogleSignIn} disabled={isLoading}>
-              Sign in with Google
-            </GoogleSignInButton>
-          </div>
-        )}
-        
-        {step === 3 && (
-          <div className="space-y-6">
-            <Button variant="ghost" onClick={goBack} className="p-0 h-auto text-green-primary">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {isAdminLogin ? "Back to Password" : "Change Number"}
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
-              OTP sent to +91 {phoneNumber}
-            </div>
-            <div className="space-y-2">
-              <Label>Enter OTP</Label>
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-            </div>
-            <Button onClick={handleVerifyOTP} className="w-full green-gradient text-white" disabled={isLoading || otp.length !== 6}>
-              {isLoading ? "Verifying..." : "Verify OTP"}
-            </Button>
-            {showGoogleSignInOnOTPError && (
-              <GoogleSignInButton onClick={handleGoogleSignIn} disabled={isLoading}>
-                Or Sign in with Google
-              </GoogleSignInButton>
-            )}
-            <div className="text-center">
-              <button onClick={handleResendOTP} disabled={isLoading} className="text-sm text-green-primary hover:underline disabled:opacity-50">
-                {isLoading ? "Sending..." : "Resend OTP"}
-              </button>
-            </div>
-          </div>
-        )}
-      </Card>
+    <div className="min-h-screen bg-[#F7FEF7] flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="w-full max-w-sm border-gray-200 shadow-lg shadow-green-100/50 rounded-2xl">
+          <CardContent className="p-8">
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div key="step1" variants={stepAnimationVariants} initial="initial" animate="animate" exit="exit" transition={stepAnimationTransition}>
+                  <div className="flex justify-center mb-3">
+                    <img src="/icon.png" alt="ChargeNest Icon" className="w-24 h-24" />
+                  </div>
+                  <motion.h1 className="flex justify-center text-4xl font-bold mb-3" variants={titleContainerVariants} initial="hidden" animate="visible">
+                    {Array.from(appNamePart1).map((letter, index) => (<motion.span key={`charge-${index}`} variants={titleLetterVariants} className="text-orange-500">{letter}</motion.span>))}
+                    {Array.from(appNamePart2).map((letter, index) => (<motion.span key={`nest-${index}`} variants={titleLetterVariants} className="text-teal-600">{letter}</motion.span>))}
+                  </motion.h1>
+                  <div className="h-8 text-center mb-6">
+                    <AnimatePresence mode="wait">
+                      <motion.p key={textIndex} variants={textAnimationVariants} initial="initial" animate="animate" exit="exit" className="text-gray-500">{cyclingTexts[textIndex]}</motion.p>
+                    </AnimatePresence>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="phone-number" className="font-semibold text-green-800">Phone Number</Label>
+                      <div className="flex items-center mt-2 w-full rounded-lg border bg-green-50/50 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500">
+                        <span className="px-4 text-gray-500 border-r">+91</span>
+                        <Input id="phone-number" type="tel" placeholder="Enter here..." value={phoneNumber} onChange={(e) => handlePhoneNumberChange(e.target.value)} className="pl-4 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"/>
+                      </div>
+                      {phoneError && phoneNumber && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+                    </div>
+                    <p className="text-xs text-center text-gray-500 px-2 !mt-2">By clicking Continue, you agree to our{' '}<Link to="/terms-and-conditions" className="font-semibold text-green-700 hover:underline">Terms & Conditions</Link> and{' '}<Link to="/privacy-policy" className="font-semibold text-green-700 hover:underline">Privacy Policy</Link>.</p>
+                    <Button onClick={handleContinue} className="w-full bg-green-600 hover:bg-green-700 text-white text-base py-6" disabled={isLoading || !!phoneError}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isLoading ? "Please wait..." : "Continue"}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+              {step === 2 && (
+                <motion.div key="step2" variants={stepAnimationVariants} initial="initial" animate="animate" exit="exit" transition={stepAnimationTransition}>
+                  {isVerifyingAdmin ? (
+                    <div className="space-y-6">
+                      <div className="text-center mb-4">
+                        <h1 className="text-2xl font-bold text-green-800">Admin Login</h1>
+                        <p className="text-gray-500 mt-2">Enter your password for <br /><b className="text-gray-700">+91 {phoneNumber}</b></p>
+                      </div>
+                      <div>
+                        <Label htmlFor="password" className="font-semibold text-green-800">Password</Label>
+                        <Input id="password" type="password" value={password} onChange={(e) => { setPassword(e.target.value); if (passwordError) setPasswordError(null); }} placeholder="Enter your password" className="mt-2" />
+                        {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
+                      </div>
+                      <Button onClick={handleAdminLogin} className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading || !password}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isLoading ? 'Verifying...' : 'Log In'}
+                      </Button>
+                      <Button variant="link" onClick={goBack} className="w-full text-green-700">
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Change Number
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center mb-8">
+                        <h1 className="text-2xl font-bold text-green-800">Enter OTP</h1>
+                        <p className="text-gray-500 mt-2">A 6-digit code was sent to <br /><b className="text-gray-700">+91 {phoneNumber}</b></p>
+                      </div>
+                      <div className="space-y-6">
+                        <div className="flex justify-center">
+                          <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                            <InputOTPGroup>{[...Array(6)].map((_, i) => <InputOTPSlot key={i} index={i} />)}</InputOTPGroup>
+                          </InputOTP>
+                        </div>
+                        <div className="text-center text-sm">
+                          {countdown > 0 ? (<p className="text-muted-foreground">Resend OTP in {countdown}s</p>) : (
+                            <Button variant="link" className="text-green-700 p-0 h-auto" onClick={handleResendOTP} disabled={isResending}>
+                              {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Resend OTP
+                            </Button>
+                          )}
+                        </div>
+                        <Button onClick={handleVerifyOTP} className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading || otp.length !== 6}>
+                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Verify OTP
+                        </Button>
+                        <Button variant="link" onClick={goBack} className="w-full text-green-700">
+                           <ArrowLeft className="h-4 w-4 mr-2" /> Change Number
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+          <CardFooter className="justify-center py-4">
+            <p className="text-sm text-muted-foreground">Don't have an account?{' '}<Link to="/register" className="font-semibold text-green-700 hover:underline">Register</Link></p>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 };
