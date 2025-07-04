@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
+
+// --- 1. IMPORT THE USERPROVIDER ---
+import { UserProvider } from "./hooks/useUser"; // Make sure the path is correct
+
 import Home from "./pages/Home";
 import History from "./pages/History";
 import Wallet from "./pages/Wallet";
@@ -20,17 +24,14 @@ import AdminLogin from "./pages/AdminLogin";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-// --- IMPORT THE NEW LISTENER COMPONENT ---
 import RealtimeNotificationListener from "./components/auth/RealtimeNotificationListener";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Check for repeat recharge data
     const repeatData = sessionStorage.getItem('repeatRechargeData');
     if (repeatData && window.location.search.includes('repeat=true')) {
-      // This will be handled by the Home component
       sessionStorage.removeItem('repeatRechargeData');
     }
   }, []);
@@ -40,30 +41,30 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          {/* --- ADD THE LISTENER HERE --- */}
-          {/* This component is always active, listening for notifications */}
-          <RealtimeNotificationListener />
-          
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-            <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-            <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            
-            <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPanel /></ProtectedRoute>} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        {/* --- 2. WRAP YOUR APP WITH THE PROVIDER --- */}
+        <UserProvider>
+          <BrowserRouter>
+            <RealtimeNotificationListener />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              
+              <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+              <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              
+              <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPanel /></ProtectedRoute>} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </UserProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
